@@ -17,7 +17,7 @@ jobs:
 
       - name: Validate Vercel Configuration JSON Syntax
         run: |
-          python3 -c "import json; data = json.load(open('vercel.json')); assert 'buildCommand' in data; assert 'outputDirectory' in data; print('vercel.json is valid JSON with required build directives.')"
+          python3 -c "import json; data = json.load(open('vercel.json')); assert 'outputDirectory' in data; print('vercel.json is valid JSON with required outputDirectory directive.')"
 
       - name: Verify Git Exclusion of Secrets and .env Files
         run: |

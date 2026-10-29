@@ -5,10 +5,10 @@
  */
 
 function determineApiBase() {
-  // 1. Vite build-time environment variable (configured in Vercel Production/Preview)
-  if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_BASE_URL) {
-    const envUrl = import.meta.env.VITE_API_BASE_URL.replace(/\/+$/, '');
-    return envUrl.endsWith('/api/v1') ? envUrl : `${envUrl}/api/v1`;
+  // 1. Runtime window configuration (Pure Vanilla Web)
+  if (typeof window !== 'undefined' && window.__TRACEX_CONFIG__ && window.__TRACEX_CONFIG__.API_BASE_URL) {
+    const configUrl = window.__TRACEX_CONFIG__.API_BASE_URL.replace(/\/+$/, '');
+    return configUrl.endsWith('/api/v1') ? configUrl : `${configUrl}/api/v1`;
   }
 
   // 2. Window runtime configuration override

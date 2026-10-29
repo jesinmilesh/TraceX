@@ -12,8 +12,16 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 
-  <link rel="stylesheet" href="/css/style.css">
-  <link rel="stylesheet" href="/css/dashboard.css">
+  <link rel="stylesheet" href="./css/style.css">
+  <link rel="stylesheet" href="./css/dashboard.css">
+
+  <!-- Runtime Endpoint Configuration (Pure Vanilla Web) -->
+  <script>
+    window.__TRACEX_CONFIG__ = window.__TRACEX_CONFIG__ || {
+      API_BASE_URL: "",
+      WS_URL: ""
+    };
+  </script>
 </head>
 <body>
 
@@ -640,7 +648,7 @@
   <!-- Toast Notification Container -->
   <div id="toast-container"></div>
 
-  <!-- Application Script (Vanilla ES6 Module) -->
-  <script type="module" src="/js/app.js"></script>
+  <!-- Application Script (Pure Vanilla ES6 Module) -->
+  <script type="module" src="./js/app.js"></script>
 </body>
 </html>

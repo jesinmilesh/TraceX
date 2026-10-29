@@ -122,17 +122,12 @@ py -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 Interactive API documentation: `http://localhost:8000/docs`  
 Health check endpoint: `http://localhost:8000/health`
 
-### 2. Frontend Dashboard
+### 2. Frontend Dashboard (Pure HTML5 + CSS3 + Vanilla JavaScript)
+No npm installation, bundler, or build step required. The dashboard is pure native ES6 web modules:
+- Served directly by FastAPI at `http://localhost:8000/` or `http://localhost:8000/dashboard/`.
+- Or run any lightweight static web server:
 ```bash
-cd dashboard
-npm install
-npm run dev
-```
-Development dashboard runs at: `http://localhost:5173/` (proxies `/api` and `/ws` to backend).
-
-To build for production verification:
-```bash
-npm run build
+python -m http.server 5173 -d dashboard
 ```
 
 ### 3. Android Forensic Collector (Kotlin)
@@ -156,14 +151,10 @@ cd android
 2. Click **Add New Project** and select **Import Git Repository**.
 3. Select `jesinmilesh/TraceX`.
 4. In Project Settings:
-   - **Framework Preset**: `Vite`
-   - **Root Directory**: `./` (leave default, handled by `vercel.json`)
-   - **Build Command**: `cd dashboard && npm install && npm run build`
-   - **Output Directory**: `dashboard/dist`
-5. Under **Environment Variables**, add:
-   - `VITE_API_BASE_URL`: `https://<your-backend-domain>`
-   - `VITE_WS_URL`: `wss://<your-backend-domain>/ws/investigation`
-6. Click **Deploy**. Future pushes to `main` will trigger automatic zero-downtime production deployments.
+   - **Framework Preset**: `Other` (Pure Static Site)
+   - **Root Directory**: `./` (handled by `vercel.json`)
+   - **Output Directory**: `dashboard`
+5. Click **Deploy**. Vercel will serve the native HTML, CSS, and JS directly with zero build delays! Future pushes to `main` will trigger automatic instant production deployments.
 
 ---
 

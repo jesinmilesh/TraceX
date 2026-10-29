@@ -383,9 +383,9 @@ export function updateLiveStatusIndicators() {
 
 // ----------------- WEBSOCKET REAL-TIME DISPATCHER -----------------
 function determineWsUrl() {
-  // 1. Build-time environment variable (configured in Vercel Production/Preview)
-  if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_WS_URL) {
-    return import.meta.env.VITE_WS_URL;
+  // 1. Runtime window configuration (Pure Vanilla Web)
+  if (typeof window !== 'undefined' && window.__TRACEX_CONFIG__ && window.__TRACEX_CONFIG__.WS_URL) {
+    return window.__TRACEX_CONFIG__.WS_URL;
   }
 
   // 2. Window runtime configuration override
@@ -399,10 +399,10 @@ function determineWsUrl() {
     if (stored) return stored;
   }
 
-  // 4. Derive from VITE_API_BASE_URL if configured
-  if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_BASE_URL) {
+  // 4. Derive from API_BASE_URL if configured
+  if (typeof window !== 'undefined' && window.__TRACEX_CONFIG__ && window.__TRACEX_CONFIG__.API_BASE_URL) {
     try {
-      const apiUrl = new URL(import.meta.env.VITE_API_BASE_URL);
+      const apiUrl = new URL(window.__TRACEX_CONFIG__.API_BASE_URL);
       const wsProto = apiUrl.protocol === 'https:' ? 'wss:' : 'ws:';
       return `${wsProto}//${apiUrl.host}/ws/investigation`;
     } catch (e) {
