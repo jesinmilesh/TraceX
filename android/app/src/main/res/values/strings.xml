@@ -1,0 +1,16 @@
+<resources>
+    <string name="app_name">TraceX</string>
+    <string name="title_forensic_collector">TraceX Digital Evidence Collector</string>
+    <string name="subtitle_authorized_monitoring">Authorized Forensic Telemetry &amp; Evidence Sync</string>
+    <string name="label_case_id">Case ID</string>
+    <string name="label_device_id">Device Identity</string>
+    <string name="label_server_url">Forensic Server Base URL</string>
+    <string name="btn_start_collection">Start Authorized Collection</string>
+    <string name="btn_stop_collection">Stop Collection</string>
+    <string name="status_stopped">Telemetry Inactive</string>
+    <string name="status_running">Active — Collecting Telemetry</string>
+    <string name="notification_channel_name">TraceX Forensic Monitoring</string>
+    <string name="notification_channel_desc">Active notification while authorized digital evidence telemetry collection is enabled.</string>
+    <string name="notification_title">TraceX Forensic Telemetry Active</string>
+    <string name="notification_content">Authorized digital evidence collection is running for Case %s</string>
+</resources>

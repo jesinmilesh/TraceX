@@ -1,0 +1,38 @@
+name: Deployment Readiness Check
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  validate-deployment-specs:
+    name: Deployment Configuration & Security Audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Validate Vercel Configuration JSON Syntax
+        run: |
+          python3 -c "import json; data = json.load(open('vercel.json')); assert 'buildCommand' in data; assert 'outputDirectory' in data; print('vercel.json is valid JSON with required build directives.')"
+
+      - name: Verify Git Exclusion of Secrets and .env Files
+        run: |
+          echo "Checking tracked files against sensitive patterns..."
+          if git ls-files | grep -E '^\.env$|\.env\.local$|\.pem$|\.jks$|\.keystore$'; then
+            echo "ERROR: Sensitive environment file or credential tracked in Git index!"
+            exit 1
+          fi
+          echo "No sensitive credential files are tracked in the Git repository."
+
+      - name: Verify Environment Example Coverage
+        run: |
+          test -f .env.example || { echo "Missing root .env.example"; exit 1; }
+          grep -q "VITE_API_BASE_URL" .env.example || { echo "Missing VITE_API_BASE_URL in .env.example"; exit 1; }
+          grep -q "VITE_WS_URL" .env.example || { echo "Missing VITE_WS_URL in .env.example"; exit 1; }
+          grep -q "MONGODB_URI" .env.example || { echo "Missing MONGODB_URI in .env.example"; exit 1; }
+          grep -q "JWT_SECRET" .env.example || { echo "Missing JWT_SECRET in .env.example"; exit 1; }
+          echo "Environment configuration checklist verified."

@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Project TraceX — Digital Forensics SOC Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  
+  <!-- Leaflet Interactive Map Provider -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/dashboard.css">
+</head>
+<body>
+
+  <!-- Full-Screen Auth Screen (Hidden when authenticated) -->
+  <div id="auth-overlay">
+    <div class="auth-card">
+      <div class="auth-brand">
+        <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #0284c7, #06b6d4); border-radius: 12px; margin: 0 auto 16px; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 800; color: #fff; box-shadow: var(--shadow-glow-cyan);">TX</div>
+        <h2 style="font-size: 20px; font-weight: 700; letter-spacing: 0.04em;">PROJECT TRACEX</h2>
+        <p style="font-size: 12px; color: var(--color-cyan); font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; margin-top: 4px;">Forensic Telemetry &amp; Evidence SOC</p>
+      </div>
+
+      <form id="login-form">
+        <div class="form-group">
+          <label class="form-label" for="login-email">Authorized Investigator Email</label>
+          <input type="email" id="login-email" class="form-input" placeholder="admin@tracex.local" required value="admin@tracex.local">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="login-password">Cryptographic Password</label>
+          <input type="password" id="login-password" class="form-input" placeholder="••••••••••••" required value="TraceX@2026!">
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 10px; padding: 12px;">
+          Authenticate &amp; Enter SOC
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Main Application Shell -->
+  <div id="app-container">
+    
+    <!-- Left Forensic Navigation Sidebar -->
+    <aside class="sidebar">
+      <div class="brand-section">
+        <div class="brand-icon">TX</div>
+        <div>
+          <div class="brand-title">TRACEX SOC</div>
+          <div class="brand-subtitle">Production Core</div>
+        </div>
+      </div>
+
+      <ul class="nav-links">
+        <li class="nav-item active" data-view="overview">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+          Overview
+        </li>
+        <li class="nav-item" data-view="map">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg>
+          Live Map &amp; Trail
+        </li>
+        <li class="nav-item" data-view="cases">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path></svg>
+          Investigation Cases
+        </li>
+        <li class="nav-item" data-view="devices">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+          Enrolled Devices
+        </li>
+        <li class="nav-item" data-view="calls">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
+          Live Call Logs
+        </li>
+        <li class="nav-item" data-view="messages">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg>
+          Live Messages
+        </li>
+        <li class="nav-item" data-view="telemetry">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+          Telemetry Feed
+        </li>
+        <li class="nav-item" data-view="evidence">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+          Evidence Vault
+        </li>
+        <li class="nav-item" data-view="custody">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
+          Chain of Custody
+        </li>
+        <li class="nav-item" data-view="audit">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
+          Audit Logs
+        </li>
+        <li class="nav-item" data-view="reports">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+          Report Export
+        </li>
+      </ul>
+
+      <div class="sidebar-footer">
+        <div class="user-card">
+          <div id="current-user-avatar" class="user-avatar">AD</div>
+          <div class="user-info">
+            <div id="current-user-name" class="user-name">Administrator</div>
+            <div id="current-user-role" class="user-role">ADMIN</div>
+          </div>
+        </div>
+        <button id="logout-btn" class="btn btn-secondary btn-sm" style="width: 100%;">
+          Terminate Session
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Workspace -->
+    <main class="main-wrapper">
+      
+      <!-- Topbar Header -->
+      <header class="topbar">
+        <div class="case-selector-wrapper">
+          <span class="case-selector-label">Active Investigation:</span>
+          <select id="global-case-select" class="case-select">
+            <option>Loading cases...</option>
+          </select>
+        </div>
+
+        <div class="topbar-status">
+          <div class="live-indicator">
+            <span class="pulse-dot"></span>
+            <span id="ws-status-text">CONNECTING...</span>
+          </div>
+          <div id="utc-clock" class="mono text-muted" style="font-size: 11px;">
+            UTC Clock
+          </div>
+        </div>
+      </header>
+
+      <!-- Scrollable Body Views -->
+      <div class="content-body">
+        
+        <!-- VIEW 1: OVERVIEW -->
+        <div id="view-overview" class="view-panel active">
+          <div class="metrics-grid">
+            <div class="metric-card" data-switch-view="devices" style="cursor: pointer;">
+              <div class="metric-header">
+                <span class="metric-title">Active Devices</span>
+                <span class="badge badge-emerald">Online</span>
+              </div>
+              <div id="metric-active-devices" class="metric-val text-emerald">0</div>
+              <div class="metric-footer">Authorized Android Collectors</div>
+            </div>
+
+            <div class="metric-card" data-switch-view="map" style="cursor: pointer;">
+              <div class="metric-header">
+                <span class="metric-title">Telemetry Events</span>
+                <span class="badge badge-cyan">Live</span>
+              </div>
+              <div id="metric-telemetry-events" class="metric-val text-cyan">0</div>
+              <div id="metric-latest-telemetry" class="metric-footer mono">Awaiting fix...</div>
+            </div>
+
+            <div class="metric-card" data-switch-view="evidence" style="cursor: pointer;">
+              <div class="metric-header">
+                <span class="metric-title">Evidence Artifacts</span>
+                <span class="badge badge-cyan">Vault</span>
+              </div>
+              <div id="metric-evidence-count" class="metric-val">0</div>
+              <div class="metric-footer">SHA-256 Verified Storage</div>
+            </div>
+
+            <div class="metric-card" data-switch-view="custody" style="cursor: pointer;">
+              <div class="metric-header">
+                <span class="metric-title">Chained Ledger</span>
+                <span class="badge badge-emerald">Tamper-Evident</span>
+              </div>
+              <div id="metric-custody-count" class="metric-val text-emerald">0</div>
+              <div class="metric-footer">Chained Proof Blocks</div>
+            </div>
+          </div>
+
+          <!-- Real-Time Interactive Leaflet Map Preview -->
+          <div class="panel">
+            <div class="panel-header">
+              <div class="panel-title">
+                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg>
+                Real-Time Telemetry Map &amp; Movement Trail
+              </div>
+              <span class="badge badge-cyan">Leaflet Live Tile Provider</span>
+            </div>
+            <div class="panel-body" style="padding: 10px;">
+              <div id="overview-map-canvas" style="width: 100%; height: 380px; border-radius: 8px;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- VIEW 2: DEDICATED LIVE MAP & TRAIL (Section 33) -->
+        <div id="view-map" class="view-panel">
+          <div class="live-map-layout">
+            <!-- Left: Devices List -->
+            <div class="map-devices-sidebar">
+              <div class="map-devices-header">
+                <span>Enrolled Units</span>
+                <span class="badge badge-cyan" id="map-devices-count">Live</span>
+              </div>
+              <div id="map-devices-list" class="map-devices-list">
+                <div class="text-muted" style="padding: 16px; font-size: 12px; text-align: center;">Loading devices...</div>
+              </div>
+            </div>
+
+            <!-- Right: Interactive Live Map & Controls -->
+            <div class="map-viewport-container">
+              <div class="map-controls-bar">
+                <div class="map-time-filters">
+                  <button class="map-time-btn active" data-range="live">Live</button>
+                  <button class="map-time-btn" data-range="1h">Last 1h</button>
+                  <button class="map-time-btn" data-range="6h">Last 6h</button>
+                  <button class="map-time-btn" data-range="today">Today</button>
+                  <button class="map-time-btn" data-range="all">All</button>
+                  <button id="btn-clear-trail" class="btn btn-secondary btn-sm" style="font-size: 11px; padding: 4px 8px;">Clear Trail</button>
+                </div>
+                <div class="map-status-pill">
+                  <span id="map-device-status-badge" class="badge badge-emerald"><span class="pulse-dot"></span> ONLINE</span>
+                  <span class="text-muted">Speed: <strong id="map-device-speed" class="text-cyan">0.0 km/h</strong></span>
+                  <span class="text-muted">Accuracy: <strong id="map-device-accuracy" class="text-cyan">±0.0 m</strong></span>
+                  <span class="text-muted">Updated: <span id="map-device-last-update">Just now</span></span>
+                </div>
+              </div>
+              <div id="live-map-canvas" style="flex: 1; width: 100%;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- VIEW 3: CASES -->
+        <div id="view-cases" class="view-panel">
+          <div class="panel">
+            <div class="panel-header">
+              <div class="panel-title">Investigation Cases Registry</div>
+              <button id="btn-open-create-case-modal" class="btn btn-primary btn-sm">
+                + New Investigation Case
+              </button>
+            </div>
+            <div class="panel-body" style="padding: 0;">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Case Number</th>
+                    <th>Title &amp; Scope</th>
+                    <th>Status</th>
+                    <th>Lead Investigator</th>
+                    <th>Enrolled Devices</th>
+                    <th>Evidence Items</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="cases-table-body">
+                  <tr><td colspan="7" class="text-muted" style="text-align: center; padding: 20px;">Loading cases...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- VIEW 4: DEVICES -->
+        <div id="view-devices" class="view-panel">
+          <div class="panel">
+            <div class="panel-header">
+              <div class="panel-title">Enrolled Android Evidence Collectors</div>
+              <span class="badge badge-cyan">Consent-Based</span>
+            </div>
+            <div class="panel-body" style="padding: 0;">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Device ID</th>
+                    <th>Hardware Model</th>
+                    <th>Android / App Version</th>
+                    <th>Status</th>
+                    <th>Battery &amp; Network</th>
+                    <th>Last Heartbeat</th>
+                    <th>Controls</th>
+                  </tr>
+                </thead>
+                <tbody id="devices-table-body">
+                  <tr><td colspan="7" class="text-muted" style="text-align: center; padding: 20px;">Loading devices...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- VIEW 5: DEDICATED LIVE CALL LOGS (Section 19) -->
+        <div id="view-calls" class="view-panel">
+          <div class="panel">
+            <div class="panel-header">
+              <div class="panel-title">
+                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
+                Authorized Call Log Stream
+              </div>
+              <span class="badge badge-emerald"><span class="pulse-dot"></span> LIVE</span>
+            </div>
+            <div class="panel-body" style="padding: 0;">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Contact / Phone Number</th>
+                    <th>Type</th>
+                    <th>Duration</th>
+                    <th>Device ID</th>
+                    <th>Timestamp</th>
+                  </tr>
+                </thead>
+                <tbody id="calls-table-body">
+                  <tr><td colspan="5" class="text-muted" style="text-align: center; padding: 24px;">No call logs synchronized yet.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- VIEW 6: DEDICATED LIVE MESSAGES (Section 23) -->
+        <div id="view-messages" class="view-panel">
+          <div class="panel">
+            <div class="panel-header">
+              <div class="panel-title">
+                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg>
+                Authorized SMS Messages Stream
+              </div>
+              <span class="badge badge-emerald"><span class="pulse-dot"></span> LIVE</span>
+            </div>
+            <div class="panel-body" style="padding: 0;">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Sender / Recipient</th>
+                    <th>Direction</th>
+                    <th>Message Content</th>
+                    <th>Device ID</th>
+                    <th>Timestamp</th>
+                  </tr>
+                </thead>
+                <tbody id="messages-table-body">
+                  <tr><td colspan="5" class="text-muted" style="text-align: center; padding: 24px;">No SMS messages synchronized yet.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- VIEW 7: TELEMETRY FEED -->
+        <div id="view-telemetry" class="view-panel">
+          <div class="panel">
+            <div class="panel-header">
+              <div class="panel-title">Cryptographically Verified Telemetry Events</div>
+              <span class="badge badge-cyan">Real-Time</span>
+            </div>
+            <div class="panel-body" style="padding: 0;">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Event ID</th>
+                    <th>Device</th>
+                    <th>Type</th>
+                    <th>Coordinates (Lat, Lng)</th>
+                    <th>Accuracy</th>
+                    <th>SHA-256 Checksum</th>
+                    <th>Received At</th>
+                  </tr>
+                </thead>
+                <tbody id="telemetry-table-body">
+                  <tr><td colspan="7" class="text-muted" style="text-align: center; padding: 20px;">Loading telemetry...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- VIEW 8: EVIDENCE VAULT -->
+        <div id="view-evidence" class="view-panel">
+          <div class="panel">
+            <div class="panel-header">
+              <div class="panel-title">Forensic Evidence Ingestion Dropzone</div>
+              <span class="badge badge-emerald">SHA-256 Chained</span>
+            </div>
+            <div class="panel-body">
+              <div id="evidence-dropzone" class="dropzone">
+                <svg class="dropzone-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                <div style="font-size: 14px; font-weight: 600;">Drag &amp; Drop forensic extraction file or click to browse</div>
+                <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Files are automatically hashed with SHA-256 and vaulted with path-traversal protection.</div>
+                <input type="file" id="evidence-file-input" style="display: none;">
+              </div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-header">
+              <div class="panel-title">Vaulted Evidence Artifacts</div>
+            </div>
+            <div class="panel-body" style="padding: 0;">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Evidence ID</th>
+                    <th>Artifact Name</th>
+                    <th>SHA-256 Checksum</th>
+                    <th>Status</th>
+                    <th>Uploaded By</th>
+                    <th>Timestamp</th>
+                    <th>Verification</th>
+                  </tr>
+                </thead>
+                <tbody id="evidence-table-body">
+                  <tr><td colspan="7" class="text-muted" style="text-align: center; padding: 20px;">Loading evidence...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- VIEW 9: CHAIN OF CUSTODY -->
+        <div id="view-custody" class="view-panel">
+          <div class="panel">
+            <div class="panel-header">
+              <div class="panel-title">Tamper-Evident Chain of Custody Ledger</div>
+              <span class="badge badge-emerald">SHA-256 Chained Blocks</span>
+            </div>
+            <div class="panel-body">
+              <div id="custody-timeline-container" class="custody-timeline">
+                <div class="text-muted" style="text-align: center; padding: 24px;">Loading chain of custody ledger...</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- VIEW 10: AUDIT LOGS -->
+        <div id="view-audit" class="view-panel">
+          <div class="panel">
+            <div class="panel-header">
+              <div class="panel-title">Immutable Append-Only Audit Trail</div>
+              <span class="badge badge-cyan">Forensic Standard</span>
+            </div>
+            <div class="panel-body" style="padding: 0;">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Audit ID</th>
+                    <th>Action</th>
+                    <th>Actor (Role)</th>
+                    <th>Resource</th>
+                    <th>Details</th>
+                    <th>Timestamp</th>
+                  </tr>
+                </thead>
+                <tbody id="audit-table-body">
+                  <tr><td colspan="6" class="text-muted" style="text-align: center; padding: 20px;">Loading audit logs...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- VIEW 11: REPORTS -->
+        <div id="view-reports" class="view-panel">
+          <div class="panel">
+            <div class="panel-header">
+              <div class="panel-title">Authoritative Forensic Examination Report</div>
+              <button id="btn-download-report" class="btn btn-primary btn-sm">
+                Download Standalone HTML Report
+              </button>
+            </div>
+            <div class="panel-body" style="padding: 0;">
+              <iframe id="report-iframe" style="width: 100%; height: 600px; border: none; background: #fff;"></iframe>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- MODAL: CREATE CASE -->
+  <div id="modal-create-case" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 style="font-size: 15px; font-weight: 600;">Create Investigation Case</h3>
+        <button id="btn-close-create-case-modal" class="btn btn-secondary btn-sm" style="padding: 2px 8px;">✕</button>
+      </div>
+      <form id="form-create-case">
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label" for="case-title">Case Title *</label>
+            <input type="text" id="case-title" class="form-input" placeholder="e.g. Authorized Examination Case 2026" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="case-description">Scope &amp; Warrant / Authorization Details</label>
+            <textarea id="case-description" class="form-textarea" rows="3" placeholder="Authorized evidentiary collection under warrant or explicit consent."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-primary">Initialize Case</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: DEVICE DETAILS (Section 34) -->
+  <div id="modal-device-details" class="modal-overlay">
+    <div class="modal-box" style="max-width: 850px; width: 90%;">
+      <div class="modal-header">
+        <div>
+          <h3 id="dev-modal-title" style="font-size: 16px; font-weight: 700;">Device Details</h3>
+          <div id="dev-modal-model" style="font-size: 12px; color: var(--color-cyan); margin-top: 2px;">Hardware Model</div>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="document.getElementById('modal-device-details').classList.remove('active')">✕</button>
+      </div>
+
+      <!-- 9 Tabs Matching Section 34 -->
+      <div class="dev-tabs-header">
+        <button class="dev-tab-btn active" data-tab="overview">Overview</button>
+        <button class="dev-tab-btn" data-tab="history">Location History</button>
+        <button class="dev-tab-btn" data-tab="calls">Call Logs</button>
+        <button class="dev-tab-btn" data-tab="msgs">Messages</button>
+      </div>
+
+      <!-- Tab 1: Overview -->
+      <div id="dev-tab-overview" class="dev-tab-content active">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <div>
+            <div style="font-size: 11px; color: var(--text-muted); font-weight: 700;">DEVICE IDENTIFIER</div>
+            <div id="dev-overview-id" class="mono font-bold text-cyan" style="font-size: 14px; margin-top: 2px;">-</div>
+          </div>
+          <div>
+            <div style="font-size: 11px; color: var(--text-muted); font-weight: 700;">ATTACHED CASE</div>
+            <div id="dev-overview-case" class="mono font-bold" style="font-size: 14px; margin-top: 2px;">-</div>
+          </div>
+          <div>
+            <div style="font-size: 11px; color: var(--text-muted); font-weight: 700;">HARDWARE MODEL</div>
+            <div id="dev-overview-model" style="margin-top: 2px;">-</div>
+          </div>
+          <div>
+            <div style="font-size: 11px; color: var(--text-muted); font-weight: 700;">OS / APP VERSION</div>
+            <div id="dev-overview-os" style="margin-top: 2px;">-</div>
+          </div>
+          <div>
+            <div style="font-size: 11px; color: var(--text-muted); font-weight: 700;">COLLECTION STATUS</div>
+            <div id="dev-overview-status" class="text-emerald font-bold" style="margin-top: 2px;">-</div>
+          </div>
+          <div>
+            <div style="font-size: 11px; color: var(--text-muted); font-weight: 700;">BATTERY &amp; NETWORK</div>
+            <div style="margin-top: 2px;"><span id="dev-overview-battery">-</span> • <span id="dev-overview-network">-</span></div>
+          </div>
+          <div>
+            <div style="font-size: 11px; color: var(--text-muted); font-weight: 700;">REGISTERED AT</div>
+            <div id="dev-overview-registered" style="font-size: 12px; margin-top: 2px;">-</div>
+          </div>
+          <div>
+            <div style="font-size: 11px; color: var(--text-muted); font-weight: 700;">LAST HEARTBEAT</div>
+            <div id="dev-overview-lastseen" style="font-size: 12px; margin-top: 2px;">-</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 2: Location History -->
+      <div id="dev-tab-history" class="dev-tab-content">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>Coordinates</th>
+              <th>Accuracy</th>
+              <th>Speed</th>
+              <th>Hash</th>
+            </tr>
+          </thead>
+          <tbody id="dev-history-table-body">
+            <tr><td colspan="5" class="text-muted" style="text-align: center; padding: 16px;">Loading history...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Tab 3: Call Logs -->
+      <div id="dev-tab-calls" class="dev-tab-content">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Contact</th>
+              <th>Direction</th>
+              <th>Duration</th>
+              <th>Time</th>
+            </tr>
+          </thead>
+          <tbody id="dev-calls-table-body">
+            <tr><td colspan="4" class="text-muted" style="text-align: center; padding: 16px;">Loading calls...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Tab 4: Messages -->
+      <div id="dev-tab-msgs" class="dev-tab-content">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Sender</th>
+              <th>Type</th>
+              <th>Content</th>
+              <th>Time</th>
+            </tr>
+          </thead>
+          <tbody id="dev-msgs-table-body">
+            <tr><td colspan="4" class="text-muted" style="text-align: center; padding: 16px;">Loading messages...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="document.getElementById('modal-device-details').classList.remove('active')">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: VERIFICATION RESULT -->
+  <div id="modal-verify-result" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 style="font-size: 15px; font-weight: 600;">Cryptographic Hash Verification</h3>
+        <button id="btn-close-verify-modal" class="btn btn-secondary btn-sm" style="padding: 2px 8px;">✕</button>
+      </div>
+      <div id="verify-modal-content" class="modal-body">
+        <!-- Injected via JS -->
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="document.getElementById('modal-verify-result').classList.remove('active')">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container"></div>
+
+  <!-- Application Script (Vanilla ES6 Module) -->
+  <script type="module" src="/js/app.js"></script>
+</body>
+</html>

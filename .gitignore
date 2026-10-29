@@ -1,0 +1,75 @@
+# ==============================================================================
+# TraceX Project Git Ignore
+# ==============================================================================
+
+# Environment & Secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.keystore
+*.jks
+secrets/
+credentials/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+.pytest_cache/
+coverage/
+
+# Android & Gradle
+.gradle/
+build/
+*/build/
+android/app/build/
+local.properties
+.idea/
+*.iml
+.DS_Store
+Thumbs.db
+captures/
+.externalNativeBuild/
+.cxx/
+*.apk
+*.aab
+
+# Node & Dashboard
+node_modules/
+dashboard/node_modules/
+.vite/
+dist/
+dashboard/dist/
+
+# Evidence & Logs
+evidence_vault/*
+!evidence_vault/.gitkeep
+backend/evidence_vault/*
+!backend/evidence_vault/.gitkeep
+backend/backups/
+*.log
+scratch/
