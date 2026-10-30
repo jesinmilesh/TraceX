@@ -1,4 +1,10 @@
+/**
+ * Project TraceX - Authentication & RBAC Session Manager
+ * Preserves JWT session in localStorage and manages full-screen auth barrier.
+ */
+
 import { api, showToast } from './api.js';
+import { isDemoMode, setDemoMode, DEMO_USER } from './demo.js';
 
 export function getStoredUser() {
   const userStr = localStorage.getItem('tracex_user');
@@ -17,6 +23,7 @@ export function initAuth(onLoginSuccess) {
   const authOverlay = document.getElementById('auth-overlay');
   const loginForm = document.getElementById('login-form');
   const logoutBtn = document.getElementById('logout-btn');
+  const demoEnterBtn = document.getElementById('btn-enter-demo-mode');
 
   function updateAuthUI() {
     const user = getStoredUser();
@@ -28,12 +35,16 @@ export function initAuth(onLoginSuccess) {
 
       if (userNameEl) userNameEl.textContent = user.name || user.email;
       if (userRoleEl) userRoleEl.textContent = user.role;
-      if (userAvatarEl) userAvatarEl.textContent = (user.name || user.email).slice(0, 2).toUpperCase();
+      if (userAvatarEl) {
+        const initials = (user.name || user.email).split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+        userAvatarEl.textContent = initials || 'TX';
+      }
     } else {
       if (authOverlay) authOverlay.style.display = 'flex';
     }
   }
 
+  // 1. Standard Form Login
   if (loginForm) {
     loginForm.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -65,11 +76,25 @@ export function initAuth(onLoginSuccess) {
     });
   }
 
+  // 2. Direct Demonstration Mode Entrance
+  if (demoEnterBtn) {
+    demoEnterBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      setDemoMode(true);
+      localStorage.setItem('tracex_token', 'demo-tracex-forensic-token-isolated');
+      localStorage.setItem('tracex_user', JSON.stringify(DEMO_USER));
+      showToast('Entered Demonstration Mode (Isolated Simulation)', 'info');
+      updateAuthUI();
+      if (onLoginSuccess) onLoginSuccess();
+    });
+  }
+
+  // 3. Terminate Session / Logout
   if (logoutBtn) {
     logoutBtn.addEventListener('click', () => {
       localStorage.removeItem('tracex_token');
       localStorage.removeItem('tracex_user');
-      showToast('Logged out of Project TraceX', 'info');
+      showToast('Terminated Project TraceX Session', 'info');
       updateAuthUI();
     });
   }

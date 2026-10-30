@@ -1,4 +1,4 @@
-import { api, showToast } from './api.js';
+import { api, showToast, escapeHtml } from './api.js';
 
 let casesList = [];
 let activeCaseId = null;
@@ -49,11 +49,17 @@ function populateCaseDropdown() {
   const selectEl = document.getElementById('global-case-select');
   if (!selectEl) return;
 
-  selectEl.innerHTML = casesList.map(c => `
-    <option value="${c.case_id}">
-      ${c.case_number} — ${c.title.length > 28 ? c.title.slice(0, 28) + '...' : c.title}
-    </option>
-  `).join('');
+  if (casesList.length === 0) {
+    selectEl.innerHTML = '<option value="">No Active Cases</option>';
+    return;
+  }
+
+  selectEl.innerHTML = casesList.map(c => {
+    const rawTitle = c.title || 'Untitled Case';
+    const displayTitle = rawTitle.length > 32 ? rawTitle.slice(0, 32) + '...' : rawTitle;
+    const caseNum = c.case_number || c.case_id || 'TX-UNKNOWN';
+    return `<option value="${escapeHtml(c.case_id)}">${escapeHtml(caseNum)} — ${escapeHtml(displayTitle)}</option>`;
+  }).join('');
 
   selectEl.onchange = (e) => {
     setActiveCaseId(e.target.value);
@@ -69,19 +75,46 @@ export function renderCasesTable() {
     return;
   }
 
-  tbody.innerHTML = casesList.map(c => `
-    <tr>
-      <td><span class="mono text-cyan font-bold">${c.case_number}</span></td>
-      <td><strong>${c.title}</strong><br><small class="text-muted">${c.description || 'No description provided'}</small></td>
-      <td><span class="badge ${c.status === 'ACTIVE' ? 'badge-emerald' : 'badge-cyan'}">${c.status}</span></td>
-      <td>${c.investigator}</td>
-      <td><span class="mono">${c.device_count} devices</span></td>
-      <td><span class="mono">${c.evidence_count} files</span></td>
-      <td>
-        <button class="btn btn-secondary btn-sm" onclick="window.selectAndOpenCase('${c.case_id}')">Select</button>
-      </td>
-    </tr>
-  `).join('');
+  tbody.innerHTML = casesList.map(c => {
+    const caseId = escapeHtml(c.case_id || '');
+    const caseNum = escapeHtml(c.case_number || c.case_id || 'TX-UNKNOWN');
+    const title = escapeHtml(c.title || 'Untitled Case');
+    const desc = escapeHtml(c.description || 'No judicial description provided');
+    const status = escapeHtml(c.status || 'OPEN');
+    const investigator = escapeHtml(c.investigator || c.lead_investigator || 'Special Agent Vance');
+    const devCount = Number(c.device_count || 1);
+    const evCount = Number(c.evidence_count || 0);
+    const isCurrentActive = (c.case_id === getActiveCaseId());
+
+    return `
+      <tr class="${isCurrentActive ? 'case-row-active' : ''}">
+        <td><span class="mono text-cyan font-bold">${caseNum}</span></td>
+        <td>
+          <div style="font-weight: 600; color: var(--text-primary);">${title}</div>
+          <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">${desc}</div>
+        </td>
+        <td><span class="badge ${status === 'ACTIVE' || status === 'OPEN' ? 'badge-emerald' : 'badge-cyan'}">${status}</span></td>
+        <td>${investigator}</td>
+        <td><span class="mono">${devCount} units</span></td>
+        <td><span class="mono">${evCount} items</span></td>
+        <td>
+          <button class="btn ${isCurrentActive ? 'btn-primary' : 'btn-secondary'} btn-sm" data-select-case="${caseId}">
+            ${isCurrentActive ? 'Active' : 'Select'}
+          </button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  // Attach safe click listeners
+  tbody.querySelectorAll('[data-select-case]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const targetId = btn.getAttribute('data-select-case');
+      if (targetId) {
+        window.selectAndOpenCase(targetId);
+      }
+    });
+  });
 }
 
 export function initCases() {
@@ -106,11 +139,13 @@ export function initCases() {
 
       try {
         const newCase = await api.post('/cases', { title, description });
-        showToast(`Case ${newCase.case_number} created successfully`, 'success');
+        showToast(`Case ${newCase.case_number || newCase.case_id} initialized successfully`, 'success');
         if (modal) modal.classList.remove('active');
         form.reset();
         await loadCases();
-        setActiveCaseId(newCase.case_id);
+        if (newCase.case_id) {
+          setActiveCaseId(newCase.case_id);
+        }
       } catch (err) {
         showToast(err.message || 'Failed to create case', 'error');
       }
@@ -121,6 +156,7 @@ export function initCases() {
     setActiveCaseId(caseId);
     const selectEl = document.getElementById('global-case-select');
     if (selectEl) selectEl.value = caseId;
-    showToast(`Switched active context to Case ${caseId}`, 'info');
+    renderCasesTable();
+    showToast(`Active case switched to ${caseId}`, 'info');
   };
 }

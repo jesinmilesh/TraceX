@@ -2,7 +2,35 @@
  * Project TraceX - Core API & HTTP Client
  * Framework-free Vanilla JS fetch client with Bearer token authentication
  * Automatically adapts to server hostname/port or reverse proxy without hardcoded URLs.
+ * 
+ * Strict Mode Separation:
+ * - When DEMO_MODE is true: Serves purely isolated, in-memory fictional demo datasets.
+ * - When DEMO_MODE is false (Live SOC): Executes real fetch requests to backend endpoints.
+ *   Never silently substitutes mock data when a live API request fails.
  */
+
+import {
+  isDemoMode,
+  DEMO_USER,
+  DEMO_CASES,
+  DEMO_DEVICES,
+  DEMO_TELEMETRY,
+  DEMO_CALLS,
+  DEMO_MESSAGES,
+  DEMO_EVIDENCE,
+  DEMO_CUSTODY,
+  DEMO_AUDIT
+} from './demo.js';
+
+export function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 
 function determineApiBase() {
   // 1. Runtime window configuration (Pure Vanilla Web)
@@ -56,7 +84,10 @@ export function showToast(message, type = 'info') {
 
   const toast = document.createElement('div');
   toast.className = `toast toast-${type}`;
-  toast.innerHTML = `<span>${message}</span>`;
+  
+  const textSpan = document.createElement('span');
+  textSpan.textContent = String(message);
+  toast.appendChild(textSpan);
 
   container.appendChild(toast);
 
@@ -67,7 +98,114 @@ export function showToast(message, type = 'info') {
   }, 4000);
 }
 
+// Simulated latency for realistic demo interactions (ms)
+const DEMO_LATENCY_MS = 60;
+
+function resolveDemoData(endpoint, options = {}) {
+  const method = (options.method || 'GET').toUpperCase();
+  const cleanEndpoint = endpoint.replace(/^\/api\/v1/, '').split('?')[0];
+
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      // 1. Auth Login
+      if (cleanEndpoint === '/auth/login' && method === 'POST') {
+        resolve({
+          access_token: 'demo-tracex-forensic-token-isolated',
+          token_type: 'bearer',
+          user: DEMO_USER
+        });
+        return;
+      }
+
+      // 2. Cases
+      if (cleanEndpoint === '/cases') {
+        resolve(DEMO_CASES);
+        return;
+      }
+
+      // 3. Devices
+      if (cleanEndpoint === '/devices') {
+        resolve(DEMO_DEVICES);
+        return;
+      }
+
+      // 4. Telemetry Endpoints
+      if (cleanEndpoint.startsWith('/telemetry/')) {
+        if (cleanEndpoint.endsWith('/calls')) {
+          resolve(DEMO_CALLS);
+          return;
+        }
+        if (cleanEndpoint.endsWith('/messages')) {
+          resolve(DEMO_MESSAGES);
+          return;
+        }
+        resolve(DEMO_TELEMETRY);
+        return;
+      }
+
+      // 5. Evidence
+      if (cleanEndpoint.includes('/verify')) {
+        resolve({
+          status: 'INTEGRITY VERIFIED',
+          filename: 'simulated_vault_artifact.raw',
+          evidence_id: 'EVD-DEMO-0041',
+          original_sha256: '9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08',
+          current_sha256: '9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08',
+          verified_by: 'investigator.demo@tracex.local',
+          verified_at: new Date().toISOString(),
+          is_demo: true
+        });
+        return;
+      }
+      if (cleanEndpoint.startsWith('/evidence/case/')) {
+        resolve(DEMO_EVIDENCE);
+        return;
+      }
+      if (cleanEndpoint === '/evidence/upload' && method === 'POST') {
+        resolve({
+          success: true,
+          evidence_id: `EVD-DEMO-${Date.now().toString().slice(-4)}`,
+          original_filename: 'simulated_uploaded_file.bin',
+          sha256: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+          vault_status: 'SIMULATED_VERIFIED',
+          is_demo: true
+        });
+        return;
+      }
+
+      // 6. Custody
+      if (cleanEndpoint.startsWith('/custody/case/')) {
+        resolve(DEMO_CUSTODY);
+        return;
+      }
+
+      // 7. Audit
+      if (cleanEndpoint === '/audit') {
+        resolve(DEMO_AUDIT);
+        return;
+      }
+
+      // 8. Reports Preview
+      if (cleanEndpoint === '/reports/preview') {
+        resolve({
+          preview_html: '<div style="padding:16px; font-family:sans-serif; color:#f1f5f9;"><h4>Project TraceX Forensic Audit Preview [DEMO MODE]</h4><p>Report compiled for Case TX-2026-089 (Operation Sentinel Shadow). All records are simulated for demonstration.</p></div>'
+        });
+        return;
+      }
+
+      // Default demo fallback
+      resolve({ status: 'ok', is_demo: true, endpoint: cleanEndpoint });
+    }, DEMO_LATENCY_MS);
+  });
+}
+
 export async function request(endpoint, options = {}) {
+  // ---------------- DEMO MODE INTERCEPTION ----------------
+  if (isDemoMode()) {
+    return await resolveDemoData(endpoint, options);
+  }
+
+  // ---------------- LIVE SOC MODE (REAL BACKEND) ----------------
   const token = localStorage.getItem('tracex_token');
   const headers = options.headers || {};
 

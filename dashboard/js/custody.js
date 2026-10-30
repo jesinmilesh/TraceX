@@ -1,4 +1,4 @@
-import { api, showToast } from './api.js';
+import { api, showToast, escapeHtml } from './api.js';
 import { getActiveCaseId } from './cases.js';
 
 let custodyEntries = [];
@@ -8,7 +8,7 @@ export async function loadCustody() {
   if (!caseId) return;
 
   try {
-    custodyEntries = await api.get(`/custody/case/${caseId}`);
+    custodyEntries = await api.get(`/custody/case/${encodeURIComponent(caseId)}`);
     renderCustodyTimeline();
     updateCustodyMetrics();
   } catch (err) {
@@ -30,23 +30,34 @@ export function renderCustodyTimeline() {
     return;
   }
 
-  container.innerHTML = custodyEntries.map((c, idx) => `
-    <div class="custody-block">
-      <div class="custody-node-dot"></div>
-      <div class="custody-meta">
-        <div>
-          <span class="badge badge-cyan">${c.action}</span>
-          <strong style="margin-left: 8px;">${c.evidence_id}</strong>
+  container.innerHTML = custodyEntries.map((c, idx) => {
+    const action = escapeHtml(c.action || 'TRANSACTION');
+    const evId = escapeHtml(c.evidence_id || 'N/A');
+    const desc = escapeHtml(c.description || c.notes || 'Forensic custody transaction logged.');
+    const prevHash = escapeHtml(c.previous_event_hash || c.previous_hash || 'GENESIS');
+    const currHash = escapeHtml(c.event_hash || c.block_hash || 'N/A');
+    const time = c.timestamp ? new Date(c.timestamp).toLocaleString() : 'N/A';
+    const actor = escapeHtml(c.actor || c.role || 'Investigator');
+
+    return `
+      <div class="custody-block">
+        <div class="custody-node-dot"></div>
+        <div class="custody-meta">
+          <div>
+            <span class="badge badge-cyan">${action}</span>
+            <strong style="margin-left: 8px; color: var(--text-primary); font-size: 12.5px;">${evId}</strong>
+            <span style="font-size: 11px; color: var(--text-muted); margin-left: 6px;">(${actor})</span>
+          </div>
+          <small class="text-muted mono" style="font-size: 10.5px;">${escapeHtml(time)}</small>
         </div>
-        <small class="text-muted mono">${new Date(c.timestamp).toLocaleString()}</small>
+        <div class="custody-desc">${desc}</div>
+        <div class="custody-hashes">
+          <div><span style="color: var(--text-muted);">PREV HASH:</span> <span class="mono" style="color: #94a3b8;">${prevHash}</span></div>
+          <div><span style="color: var(--color-cyan);">BLOCK HASH:</span> <span class="mono" style="color: var(--color-emerald);">${currHash}</span></div>
+        </div>
       </div>
-      <div class="custody-desc">${c.description}</div>
-      <div class="custody-hashes">
-        <div><span style="color: var(--text-muted);">PREV HASH:</span> <span class="mono" style="color: #94a3b8;">${c.previous_event_hash}</span></div>
-        <div><span style="color: var(--color-cyan);">EVENT HASH:</span> <span class="mono" style="color: var(--color-emerald);">${c.event_hash}</span></div>
-      </div>
-    </div>
-  `).join('');
+    `;
+  }).join('');
 }
 
 export function initCustody() {

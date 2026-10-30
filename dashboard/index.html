@@ -3,10 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Project TraceX — Digital Forensics SOC Dashboard</title>
+  <title>Project TraceX — Digital Forensics &amp; SOC Admin Dashboard</title>
+  
+  <!-- Typography: Inter & JetBrains Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   
   <!-- Leaflet Interactive Map Provider -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
@@ -15,11 +17,27 @@
   <link rel="stylesheet" href="./css/style.css">
   <link rel="stylesheet" href="./css/dashboard.css">
 
-  <!-- Runtime Endpoint Configuration (Pure Vanilla Web) -->
+  <!-- Runtime Endpoint & Demonstration Mode Configuration -->
   <script>
+    const _params = new URLSearchParams(window.location.search);
+    const _isDemoQuery = _params.get('demo') === '1' || _params.get('demo') === 'true';
+    if (_isDemoQuery && typeof localStorage !== 'undefined') {
+      localStorage.setItem('tracex_demo_mode', 'true');
+      localStorage.setItem('tracex_token', 'demo-tracex-forensic-token-isolated');
+      localStorage.setItem('tracex_user', JSON.stringify({
+        user_id: 'USR-DEMO-001',
+        email: 'investigator.demo@tracex.local',
+        name: 'Chief Forensic Examiner Vance',
+        role: 'DEMO EXAMINER',
+        badge_number: 'FX-8841-DEMO',
+        is_active: true,
+        is_demo: true
+      }));
+    }
     window.__TRACEX_CONFIG__ = window.__TRACEX_CONFIG__ || {
       API_BASE_URL: "",
-      WS_URL: ""
+      WS_URL: "",
+      DEMO_MODE: _isDemoQuery
     };
   </script>
 </head>
@@ -29,9 +47,9 @@
   <div id="auth-overlay">
     <div class="auth-card">
       <div class="auth-brand">
-        <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #0284c7, #06b6d4); border-radius: 12px; margin: 0 auto 16px; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 800; color: #fff; box-shadow: var(--shadow-glow-cyan);">TX</div>
-        <h2 style="font-size: 20px; font-weight: 700; letter-spacing: 0.04em;">PROJECT TRACEX</h2>
-        <p style="font-size: 12px; color: var(--color-cyan); font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; margin-top: 4px;">Forensic Telemetry &amp; Evidence SOC</p>
+        <div class="brand-icon" style="width: 40px; height: 40px; font-size: 16px; margin: 0 auto 10px;">TX</div>
+        <h2 style="font-size: 17px; font-weight: 700; letter-spacing: 0.04em;">PROJECT TRACEX</h2>
+        <p style="font-size: 11px; color: var(--color-cyan); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 3px;">Forensic Telemetry &amp; Evidence SOC</p>
       </div>
 
       <form id="login-form">
@@ -43,23 +61,37 @@
           <label class="form-label" for="login-password">Cryptographic Password</label>
           <input type="password" id="login-password" class="form-input" placeholder="••••••••••••" required value="TraceX@2026!">
         </div>
-        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 10px; padding: 12px;">
+        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 6px; padding: 10px;">
           Authenticate &amp; Enter SOC
         </button>
       </form>
+
+      <div style="margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--border-color); text-align: center;">
+        <button id="btn-enter-demo-mode" class="btn btn-secondary btn-sm" style="width: 100%; padding: 8px;">
+          <span class="pulse-dot amber"></span> Enter Demonstration SOC (Simulated)
+        </button>
+      </div>
     </div>
   </div>
+
+  <!-- Mobile Menu Toggle -->
+  <button class="mobile-menu-btn" id="mobile-menu-btn" aria-label="Toggle navigation menu">
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"></path></svg>
+  </button>
+
+  <!-- Sidebar Overlay (mobile) -->
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
 
   <!-- Main Application Shell -->
   <div id="app-container">
     
-    <!-- Left Forensic Navigation Sidebar -->
-    <aside class="sidebar">
+    <!-- Left Forensic Navigation Sidebar (All 11 Sections Preserved) -->
+    <aside class="sidebar" id="main-sidebar">
       <div class="brand-section">
         <div class="brand-icon">TX</div>
         <div>
-          <div class="brand-title">TRACEX SECURITY DASHBOARD</div>
-          <div class="brand-subtitle">Production Core • SOC</div>
+          <div class="brand-title">TRACEX SOC</div>
+          <div class="brand-subtitle">Digital Forensics</div>
         </div>
       </div>
 
@@ -124,24 +156,36 @@
       </div>
     </aside>
 
-    <!-- Main Workspace -->
+    <!-- Main Workspace Area -->
     <main class="main-wrapper">
       
       <!-- Topbar Header -->
       <header class="topbar">
         <div class="case-selector-wrapper">
-          <span class="case-selector-label">Active Investigation:</span>
+          <span class="case-selector-label">Investigation:</span>
           <select id="global-case-select" class="case-select">
             <option>Loading cases...</option>
           </select>
         </div>
 
         <div class="topbar-status">
-          <div class="live-indicator">
-            <span class="pulse-dot"></span>
-            <span id="ws-status-text">CONNECTING...</span>
+          <!-- Persistent Demo Mode Indicator -->
+          <div id="demo-indicator-bar" class="demo-mode-badge" style="display: none;">
+            <span class="pulse-dot amber"></span> DEMO MODE
           </div>
-          <div id="utc-clock" class="mono text-muted" style="font-size: 11px;">
+
+          <!-- Mode Toggle Button -->
+          <button id="btn-toggle-demo" class="btn btn-secondary btn-sm" style="font-size: 10.5px;">
+            <span id="demo-toggle-label">Demo Mode: OFF</span>
+          </button>
+
+          <!-- True WebSocket Status Indicator -->
+          <div id="ws-status-container" class="live-indicator">
+            <span id="ws-status-text"><span class="pulse-dot" style="background:#64748b;"></span> DISCONNECTED</span>
+          </div>
+
+          <!-- Forensic UTC Timestamp Clock -->
+          <div id="utc-clock" class="mono text-muted" style="font-size: 10.5px;">
             UTC Clock
           </div>
         </div>
@@ -152,6 +196,8 @@
         
         <!-- VIEW 1: OVERVIEW -->
         <div id="view-overview" class="view-panel active">
+          
+          <!-- Summary Metrics Cards -->
           <div class="metrics-grid">
             <div class="metric-card" data-switch-view="devices" style="cursor: pointer;">
               <div class="metric-header">
@@ -190,29 +236,58 @@
             </div>
           </div>
 
-          <!-- Real-Time Interactive Leaflet Map Preview -->
-          <div class="panel">
-            <div class="panel-header">
-              <div class="panel-title">
-                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg>
-                Real-Time Telemetry Map &amp; Movement Trail
+          <!-- Main Workspace: Two-Column Layout -->
+          <div class="overview-workspace">
+            
+            <!-- Left Section: Live Map & Movement Trail -->
+            <div class="panel" style="margin-bottom: 0;">
+              <div class="panel-header">
+                <div class="panel-title">
+                  <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg>
+                  Real-Time Movement Map
+                </div>
+                <span class="badge badge-cyan">Leaflet</span>
               </div>
-              <span class="badge badge-cyan">Leaflet Live Tile Provider</span>
+              <div class="panel-body" style="padding: 8px;">
+                <div id="overview-map-canvas" style="width: 100%; height: 380px; border-radius: var(--radius-md);"></div>
+              </div>
             </div>
-            <div class="panel-body" style="padding: 10px;">
-              <div id="overview-map-canvas" style="width: 100%; height: 380px; border-radius: 8px;"></div>
+
+            <!-- Right Section: Recent Events Feed -->
+            <div class="panel" style="margin-bottom: 0;">
+              <div class="panel-header">
+                <div class="panel-title">
+                  <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                  Recent Events
+                </div>
+                <span class="badge badge-neutral">Chronological</span>
+              </div>
+              <div class="panel-body" style="padding: 10px;">
+                <div id="overview-recent-events" class="overview-events-list">
+                  <div style="padding: 24px 12px; text-align: center; color: var(--text-muted); font-size: 12px;">
+                    Awaiting live forensic telemetry...
+                  </div>
+                </div>
+              </div>
             </div>
+
           </div>
+
+          <!-- Bottom: Device Summary Bar -->
+          <div id="overview-device-summary" class="device-summary-bar">
+            <!-- Dynamically injected via telemetry.js updateOverviewDeviceSummary() -->
+          </div>
+
         </div>
 
-        <!-- VIEW 2: DEDICATED LIVE MAP & TRAIL (Section 33) -->
+        <!-- VIEW 2: DEDICATED LIVE MAP & TRAIL -->
         <div id="view-map" class="view-panel">
           <div class="live-map-layout">
-            <!-- Left: Devices List -->
+            <!-- Left: Enrolled Units Filter List -->
             <div class="map-devices-sidebar">
               <div class="map-devices-header">
                 <span>Enrolled Units</span>
-                <span class="badge badge-cyan" id="map-devices-count">Live</span>
+                <span class="badge badge-cyan" id="map-devices-count">Active</span>
               </div>
               <div id="map-devices-list" class="map-devices-list">
                 <div class="text-muted" style="padding: 16px; font-size: 12px; text-align: center;">Loading devices...</div>
@@ -228,7 +303,7 @@
                   <button class="map-time-btn" data-range="6h">Last 6h</button>
                   <button class="map-time-btn" data-range="today">Today</button>
                   <button class="map-time-btn" data-range="all">All</button>
-                  <button id="btn-clear-trail" class="btn btn-secondary btn-sm" style="font-size: 11px; padding: 4px 8px;">Clear Trail</button>
+                  <button id="btn-clear-trail" class="btn btn-secondary btn-sm" style="font-size: 10.5px; padding: 3px 8px;">Clear Trail</button>
                 </div>
                 <div class="map-status-pill">
                   <span id="map-device-status-badge" class="badge badge-emerald"><span class="pulse-dot"></span> ONLINE</span>
@@ -248,31 +323,33 @@
             <div class="panel-header">
               <div class="panel-title">Investigation Cases Registry</div>
               <button id="btn-open-create-case-modal" class="btn btn-primary btn-sm">
-                + New Investigation Case
+                + New Case
               </button>
             </div>
             <div class="panel-body" style="padding: 0;">
-              <table class="data-table">
-                <thead>
-                  <tr>
-                    <th>Case Number</th>
-                    <th>Title &amp; Scope</th>
-                    <th>Status</th>
-                    <th>Lead Investigator</th>
-                    <th>Enrolled Devices</th>
-                    <th>Evidence Items</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody id="cases-table-body">
-                  <tr><td colspan="7" class="text-muted" style="text-align: center; padding: 20px;">Loading cases...</td></tr>
-                </tbody>
-              </table>
+              <div class="table-container">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Case Number</th>
+                      <th>Title &amp; Scope</th>
+                      <th>Status</th>
+                      <th>Lead Investigator</th>
+                      <th>Devices</th>
+                      <th>Evidence</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="cases-table-body">
+                    <tr><td colspan="7" class="text-muted" style="text-align: center; padding: 20px;">Loading cases...</td></tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>
 
-        <!-- VIEW 4: DEVICES -->
+        <!-- VIEW 4: ENROLLED DEVICES -->
         <div id="view-devices" class="view-panel">
           <div class="panel">
             <div class="panel-header">
@@ -280,80 +357,86 @@
               <span class="badge badge-cyan">Consent-Based</span>
             </div>
             <div class="panel-body" style="padding: 0;">
-              <table class="data-table">
-                <thead>
-                  <tr>
-                    <th>Device ID</th>
-                    <th>Hardware Model</th>
-                    <th>Android / App Version</th>
-                    <th>Status</th>
-                    <th>Battery &amp; Network</th>
-                    <th>Last Heartbeat</th>
-                    <th>Controls</th>
-                  </tr>
-                </thead>
-                <tbody id="devices-table-body">
-                  <tr><td colspan="7" class="text-muted" style="text-align: center; padding: 20px;">Loading devices...</td></tr>
-                </tbody>
-              </table>
+              <div class="table-container">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Device ID</th>
+                      <th>Model</th>
+                      <th>OS &amp; Version</th>
+                      <th>Status</th>
+                      <th>Battery / Network</th>
+                      <th>Last Heartbeat</th>
+                      <th>Controls</th>
+                    </tr>
+                  </thead>
+                  <tbody id="devices-table-body">
+                    <tr><td colspan="7" class="text-muted" style="text-align: center; padding: 20px;">Loading devices...</td></tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>
 
-        <!-- VIEW 5: DEDICATED LIVE CALL LOGS (Section 19) -->
+        <!-- VIEW 5: LIVE CALL LOGS -->
         <div id="view-calls" class="view-panel">
           <div class="panel">
             <div class="panel-header">
               <div class="panel-title">
-                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
-                Authorized Call Log Stream
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
+                Call Log Stream
               </div>
-              <span class="badge badge-emerald"><span class="pulse-dot"></span> LIVE</span>
+              <span id="badge-call-count" class="badge badge-emerald">Live Stream</span>
             </div>
             <div class="panel-body" style="padding: 0;">
-              <table class="data-table">
-                <thead>
-                  <tr>
-                    <th>Contact / Phone Number</th>
-                    <th>Type</th>
-                    <th>Duration</th>
-                    <th>Device ID</th>
-                    <th>Timestamp</th>
-                  </tr>
-                </thead>
-                <tbody id="calls-table-body">
-                  <tr><td colspan="5" class="text-muted" style="text-align: center; padding: 24px;">No call logs synchronized yet.</td></tr>
-                </tbody>
-              </table>
+              <div class="table-container">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Contact / Number</th>
+                      <th>Type</th>
+                      <th>Duration</th>
+                      <th>Device ID</th>
+                      <th>Timestamp</th>
+                    </tr>
+                  </thead>
+                  <tbody id="calls-table-body">
+                    <tr><td colspan="5" class="text-muted" style="text-align: center; padding: 24px;">No call logs synchronized yet.</td></tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>
 
-        <!-- VIEW 6: DEDICATED LIVE MESSAGES (Section 23) -->
+        <!-- VIEW 6: LIVE MESSAGES -->
         <div id="view-messages" class="view-panel">
           <div class="panel">
             <div class="panel-header">
               <div class="panel-title">
-                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg>
-                Authorized SMS Messages Stream
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg>
+                SMS Messages Stream
               </div>
-              <span class="badge badge-emerald"><span class="pulse-dot"></span> LIVE</span>
+              <span id="badge-msg-count" class="badge badge-emerald">Live Stream</span>
             </div>
             <div class="panel-body" style="padding: 0;">
-              <table class="data-table">
-                <thead>
-                  <tr>
-                    <th>Sender / Recipient</th>
-                    <th>Direction</th>
-                    <th>Message Content</th>
-                    <th>Device ID</th>
-                    <th>Timestamp</th>
-                  </tr>
-                </thead>
-                <tbody id="messages-table-body">
-                  <tr><td colspan="5" class="text-muted" style="text-align: center; padding: 24px;">No SMS messages synchronized yet.</td></tr>
-                </tbody>
-              </table>
+              <div class="table-container">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Sender / Recipient</th>
+                      <th>Direction</th>
+                      <th>Message Preview</th>
+                      <th>Device ID</th>
+                      <th>Timestamp</th>
+                    </tr>
+                  </thead>
+                  <tbody id="messages-table-body">
+                    <tr><td colspan="5" class="text-muted" style="text-align: center; padding: 24px;">No SMS messages synchronized yet.</td></tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>
@@ -362,26 +445,28 @@
         <div id="view-telemetry" class="view-panel">
           <div class="panel">
             <div class="panel-header">
-              <div class="panel-title">Cryptographically Verified Telemetry Events</div>
-              <span class="badge badge-cyan">Real-Time</span>
+              <div class="panel-title">Verified Telemetry Events</div>
+              <span class="badge badge-cyan">Append-Only Feed</span>
             </div>
             <div class="panel-body" style="padding: 0;">
-              <table class="data-table">
-                <thead>
-                  <tr>
-                    <th>Event ID</th>
-                    <th>Device</th>
-                    <th>Type</th>
-                    <th>Coordinates (Lat, Lng)</th>
-                    <th>Accuracy</th>
-                    <th>SHA-256 Checksum</th>
-                    <th>Received At</th>
-                  </tr>
-                </thead>
-                <tbody id="telemetry-table-body">
-                  <tr><td colspan="7" class="text-muted" style="text-align: center; padding: 20px;">Loading telemetry...</td></tr>
-                </tbody>
-              </table>
+              <div class="table-container">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Event ID</th>
+                      <th>Device ID</th>
+                      <th>Event Type</th>
+                      <th>Coordinates</th>
+                      <th>Accuracy</th>
+                      <th>Checksum</th>
+                      <th>Received</th>
+                    </tr>
+                  </thead>
+                  <tbody id="telemetry-table-body">
+                    <tr><td colspan="7" class="text-muted" style="text-align: center; padding: 20px;">Loading telemetry...</td></tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>
@@ -390,14 +475,14 @@
         <div id="view-evidence" class="view-panel">
           <div class="panel">
             <div class="panel-header">
-              <div class="panel-title">Forensic Evidence Ingestion Dropzone</div>
+              <div class="panel-title">Evidence Ingestion</div>
               <span class="badge badge-emerald">SHA-256 Chained</span>
             </div>
             <div class="panel-body">
               <div id="evidence-dropzone" class="dropzone">
                 <svg class="dropzone-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
-                <div style="font-size: 14px; font-weight: 600;">Drag &amp; Drop forensic extraction file or click to browse</div>
-                <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Files are automatically hashed with SHA-256 and vaulted with path-traversal protection.</div>
+                <div style="font-size: 13px; font-weight: 600;">Drag &amp; drop forensic archive or click to browse</div>
+                <div style="font-size: 11px; color: var(--text-muted); margin-top: 3px;">Files are hashed with SHA-256 and vaulted with path-traversal protection.</div>
                 <input type="file" id="evidence-file-input" style="display: none;">
               </div>
             </div>
@@ -408,22 +493,24 @@
               <div class="panel-title">Vaulted Evidence Artifacts</div>
             </div>
             <div class="panel-body" style="padding: 0;">
-              <table class="data-table">
-                <thead>
-                  <tr>
-                    <th>Evidence ID</th>
-                    <th>Artifact Name</th>
-                    <th>SHA-256 Checksum</th>
-                    <th>Status</th>
-                    <th>Uploaded By</th>
-                    <th>Timestamp</th>
-                    <th>Verification</th>
-                  </tr>
-                </thead>
-                <tbody id="evidence-table-body">
-                  <tr><td colspan="7" class="text-muted" style="text-align: center; padding: 20px;">Loading evidence...</td></tr>
-                </tbody>
-              </table>
+              <div class="table-container">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Evidence ID</th>
+                      <th>Artifact Name</th>
+                      <th>SHA-256 Checksum</th>
+                      <th>Status</th>
+                      <th>Acquired By</th>
+                      <th>Uploaded At</th>
+                      <th>Verification</th>
+                    </tr>
+                  </thead>
+                  <tbody id="evidence-table-body">
+                    <tr><td colspan="7" class="text-muted" style="text-align: center; padding: 20px;">Loading evidence...</td></tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>
@@ -433,7 +520,7 @@
           <div class="panel">
             <div class="panel-header">
               <div class="panel-title">Tamper-Evident Chain of Custody Ledger</div>
-              <span class="badge badge-emerald">SHA-256 Chained Blocks</span>
+              <span class="badge badge-emerald">SHA-256 Chained</span>
             </div>
             <div class="panel-body">
               <div id="custody-timeline-container" class="custody-timeline">
@@ -447,25 +534,27 @@
         <div id="view-audit" class="view-panel">
           <div class="panel">
             <div class="panel-header">
-              <div class="panel-title">Immutable Append-Only Audit Trail</div>
+              <div class="panel-title">Append-Only Audit Trail</div>
               <span class="badge badge-cyan">Forensic Standard</span>
             </div>
             <div class="panel-body" style="padding: 0;">
-              <table class="data-table">
-                <thead>
-                  <tr>
-                    <th>Audit ID</th>
-                    <th>Action</th>
-                    <th>Actor (Role)</th>
-                    <th>Resource</th>
-                    <th>Details</th>
-                    <th>Timestamp</th>
-                  </tr>
-                </thead>
-                <tbody id="audit-table-body">
-                  <tr><td colspan="6" class="text-muted" style="text-align: center; padding: 20px;">Loading audit logs...</td></tr>
-                </tbody>
-              </table>
+              <div class="table-container">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Audit ID</th>
+                      <th>Action</th>
+                      <th>Actor (Role)</th>
+                      <th>Resource</th>
+                      <th>IP / Endpoint</th>
+                      <th>Timestamp</th>
+                    </tr>
+                  </thead>
+                  <tbody id="audit-table-body">
+                    <tr><td colspan="6" class="text-muted" style="text-align: center; padding: 20px;">Loading audit logs...</td></tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>
@@ -474,9 +563,9 @@
         <div id="view-reports" class="view-panel">
           <div class="panel">
             <div class="panel-header">
-              <div class="panel-title">Authoritative Forensic Examination Report</div>
+              <div class="panel-title">Forensic Examination Report</div>
               <button id="btn-download-report" class="btn btn-primary btn-sm">
-                Download Standalone HTML Report
+                Download Report
               </button>
             </div>
             <div class="panel-body" style="padding: 0;">
@@ -493,17 +582,17 @@
   <div id="modal-create-case" class="modal-overlay">
     <div class="modal-box">
       <div class="modal-header">
-        <h3 style="font-size: 15px; font-weight: 600;">Create Investigation Case</h3>
+        <h3 style="font-size: 14px; font-weight: 600;">Initialize Investigation Case</h3>
         <button id="btn-close-create-case-modal" class="btn btn-secondary btn-sm" style="padding: 2px 8px;">✕</button>
       </div>
       <form id="form-create-case">
         <div class="modal-body">
           <div class="form-group">
             <label class="form-label" for="case-title">Case Title *</label>
-            <input type="text" id="case-title" class="form-input" placeholder="e.g. Authorized Examination Case 2026" required>
+            <input type="text" id="case-title" class="form-input" placeholder="e.g. Operation Sentinel Shadow" required>
           </div>
           <div class="form-group">
-            <label class="form-label" for="case-description">Scope &amp; Warrant / Authorization Details</label>
+            <label class="form-label" for="case-description">Scope &amp; Judicial Authorization Details</label>
             <textarea id="case-description" class="form-textarea" rows="3" placeholder="Authorized evidentiary collection under warrant or explicit consent."></textarea>
           </div>
         </div>
@@ -514,18 +603,17 @@
     </div>
   </div>
 
-  <!-- MODAL: DEVICE DETAILS (Section 34) -->
+  <!-- MODAL: DEVICE DETAILS -->
   <div id="modal-device-details" class="modal-overlay">
-    <div class="modal-box" style="max-width: 850px; width: 90%;">
+    <div class="modal-box" style="max-width: 800px; width: 92%;">
       <div class="modal-header">
         <div>
-          <h3 id="dev-modal-title" style="font-size: 16px; font-weight: 700;">Device Details</h3>
-          <div id="dev-modal-model" style="font-size: 12px; color: var(--color-cyan); margin-top: 2px;">Hardware Model</div>
+          <h3 id="dev-modal-title" style="font-size: 14px; font-weight: 700;">Device Details</h3>
+          <div id="dev-modal-model" style="font-size: 11px; color: var(--color-cyan); margin-top: 1px;">Hardware Model</div>
         </div>
         <button class="btn btn-secondary btn-sm" onclick="document.getElementById('modal-device-details').classList.remove('active')">✕</button>
       </div>
 
-      <!-- 9 Tabs Matching Section 34 -->
       <div class="dev-tabs-header">
         <button class="dev-tab-btn active" data-tab="overview">Overview</button>
         <button class="dev-tab-btn" data-tab="history">Location History</button>
@@ -535,37 +623,37 @@
 
       <!-- Tab 1: Overview -->
       <div id="dev-tab-overview" class="dev-tab-content active">
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
           <div>
-            <div style="font-size: 11px; color: var(--text-muted); font-weight: 700;">DEVICE IDENTIFIER</div>
-            <div id="dev-overview-id" class="mono font-bold text-cyan" style="font-size: 14px; margin-top: 2px;">-</div>
+            <div style="font-size: 10px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">DEVICE ID</div>
+            <div id="dev-overview-id" class="mono font-bold text-cyan" style="font-size: 13px; margin-top: 2px;">-</div>
           </div>
           <div>
-            <div style="font-size: 11px; color: var(--text-muted); font-weight: 700;">ATTACHED CASE</div>
-            <div id="dev-overview-case" class="mono font-bold" style="font-size: 14px; margin-top: 2px;">-</div>
+            <div style="font-size: 10px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">BOUND CASE</div>
+            <div id="dev-overview-case" class="mono font-bold" style="font-size: 13px; margin-top: 2px;">-</div>
           </div>
           <div>
-            <div style="font-size: 11px; color: var(--text-muted); font-weight: 700;">HARDWARE MODEL</div>
+            <div style="font-size: 10px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">MODEL</div>
             <div id="dev-overview-model" style="margin-top: 2px;">-</div>
           </div>
           <div>
-            <div style="font-size: 11px; color: var(--text-muted); font-weight: 700;">OS / APP VERSION</div>
+            <div style="font-size: 10px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">OS / APP VERSION</div>
             <div id="dev-overview-os" style="margin-top: 2px;">-</div>
           </div>
           <div>
-            <div style="font-size: 11px; color: var(--text-muted); font-weight: 700;">COLLECTION STATUS</div>
+            <div style="font-size: 10px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">STATUS</div>
             <div id="dev-overview-status" class="text-emerald font-bold" style="margin-top: 2px;">-</div>
           </div>
           <div>
-            <div style="font-size: 11px; color: var(--text-muted); font-weight: 700;">BATTERY &amp; NETWORK</div>
+            <div style="font-size: 10px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">BATTERY &amp; NETWORK</div>
             <div style="margin-top: 2px;"><span id="dev-overview-battery">-</span> • <span id="dev-overview-network">-</span></div>
           </div>
           <div>
-            <div style="font-size: 11px; color: var(--text-muted); font-weight: 700;">REGISTERED AT</div>
+            <div style="font-size: 10px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">REGISTERED</div>
             <div id="dev-overview-registered" style="font-size: 12px; margin-top: 2px;">-</div>
           </div>
           <div>
-            <div style="font-size: 11px; color: var(--text-muted); font-weight: 700;">LAST HEARTBEAT</div>
+            <div style="font-size: 10px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">LAST HEARTBEAT</div>
             <div id="dev-overview-lastseen" style="font-size: 12px; margin-top: 2px;">-</div>
           </div>
         </div>
@@ -573,54 +661,60 @@
 
       <!-- Tab 2: Location History -->
       <div id="dev-tab-history" class="dev-tab-content">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>Time</th>
-              <th>Coordinates</th>
-              <th>Accuracy</th>
-              <th>Speed</th>
-              <th>Hash</th>
-            </tr>
-          </thead>
-          <tbody id="dev-history-table-body">
-            <tr><td colspan="5" class="text-muted" style="text-align: center; padding: 16px;">Loading history...</td></tr>
-          </tbody>
-        </table>
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Coordinates</th>
+                <th>Accuracy</th>
+                <th>Speed</th>
+                <th>Hash Checksum</th>
+              </tr>
+            </thead>
+            <tbody id="dev-history-table-body">
+              <tr><td colspan="5" class="text-muted" style="text-align: center; padding: 16px;">Loading history...</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <!-- Tab 3: Call Logs -->
       <div id="dev-tab-calls" class="dev-tab-content">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>Contact</th>
-              <th>Direction</th>
-              <th>Duration</th>
-              <th>Time</th>
-            </tr>
-          </thead>
-          <tbody id="dev-calls-table-body">
-            <tr><td colspan="4" class="text-muted" style="text-align: center; padding: 16px;">Loading calls...</td></tr>
-          </tbody>
-        </table>
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Contact</th>
+                <th>Direction</th>
+                <th>Duration</th>
+                <th>Recorded Time</th>
+              </tr>
+            </thead>
+            <tbody id="dev-calls-table-body">
+              <tr><td colspan="4" class="text-muted" style="text-align: center; padding: 16px;">Loading calls...</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <!-- Tab 4: Messages -->
       <div id="dev-tab-msgs" class="dev-tab-content">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>Sender</th>
-              <th>Type</th>
-              <th>Content</th>
-              <th>Time</th>
-            </tr>
-          </thead>
-          <tbody id="dev-msgs-table-body">
-            <tr><td colspan="4" class="text-muted" style="text-align: center; padding: 16px;">Loading messages...</td></tr>
-          </tbody>
-        </table>
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Sender</th>
+                <th>Type</th>
+                <th>Content Preview</th>
+                <th>Recorded Time</th>
+              </tr>
+            </thead>
+            <tbody id="dev-msgs-table-body">
+              <tr><td colspan="4" class="text-muted" style="text-align: center; padding: 16px;">Loading messages...</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <div class="modal-footer">
@@ -629,11 +723,11 @@
     </div>
   </div>
 
-  <!-- MODAL: VERIFICATION RESULT -->
+  <!-- MODAL: HASH VERIFICATION RESULT -->
   <div id="modal-verify-result" class="modal-overlay">
     <div class="modal-box">
       <div class="modal-header">
-        <h3 style="font-size: 15px; font-weight: 600;">Cryptographic Hash Verification</h3>
+        <h3 style="font-size: 14px; font-weight: 600;">Cryptographic Hash Verification</h3>
         <button id="btn-close-verify-modal" class="btn btn-secondary btn-sm" style="padding: 2px 8px;">✕</button>
       </div>
       <div id="verify-modal-content" class="modal-body">
