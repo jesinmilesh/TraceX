@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TraceX Android Mobile App UI — Interactive Device Simulator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #000000;
+      --bg-surface: #101713;
+      --bg-surface-secondary: #17221D;
+      --primary-moss-green: #608D83;
+      --primary-neon-emerald: #39FFB8;
+      --status-green: #10B981;
+      --status-red: #EF4444;
+      --text-white: #F1F5F9;
+      --text-muted: #A7B3AE;
+      --text-dim: #6C7A74;
+      --border-subtle: #28352F;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    body {
+      background: #080D0A;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      color: var(--text-white);
+    }
+
+    .device-stage {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .badge-bar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: rgba(16, 23, 19, 0.8);
+      border: 1px solid var(--border-subtle);
+      padding: 8px 16px;
+      border-radius: 9999px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .badge-bar strong {
+      color: var(--primary-neon-emerald);
+      font-weight: 700;
+    }
+
+    /* Pixel / Galaxy Mock Frame */
+    .phone-chassis {
+      width: 390px;
+      height: 844px;
+      background: #000000;
+      border: 4px solid #233029;
+      border-radius: 46px;
+      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(57, 255, 184, 0.15);
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Dynamic Island / Camera Notch */
+    .phone-notch {
+      position: absolute;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 110px;
+      height: 26px;
+      background: #0A0F0D;
+      border-radius: 20px;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .notch-camera {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #15221C;
+      border: 1px solid #2A3C33;
+    }
+
+    /* Android Status Bar */
+    .android-status-bar {
+      height: 48px;
+      padding: 14px 24px 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-white);
+      z-index: 90;
+      background: var(--bg-dark);
+    }
+
+    .status-icons {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Screen Content - Replicating activity_main.xml */
+    .app-screen {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px 20px 24px;
+      background: var(--bg-dark);
+    }
+
+    .app-screen::-webkit-scrollbar {
+      width: 4px;
+    }
+    .app-screen::-webkit-scrollbar-thumb {
+      background: var(--border-subtle);
+      border-radius: 4px;
+    }
+
+    /* Top Header Banner */
+    .header-banner {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+
+    .brand-tx-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: var(--primary-neon-emerald);
+      color: #000000;
+      font-weight: 800;
+      font-size: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 12px rgba(57, 255, 184, 0.25);
+    }
+
+    .header-titles h1 {
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--text-white);
+      line-height: 1.2;
+    }
+
+    .header-titles p {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--primary-moss-green);
+      margin-top: 2px;
+      letter-spacing: 0.02em;
+    }
+
+    /* MaterialCardView */
+    .material-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+
+    .card-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+
+    .card-desc {
+      font-size: 11px;
+      color: var(--text-muted);
+      line-height: 1.4;
+      margin-top: 4px;
+      margin-bottom: 12px;
+    }
+
+    /* TextInputLayout */
+    .input-group {
+      margin-top: 8px;
+    }
+
+    .input-field {
+      width: 100%;
+      background: #080D0A;
+      border: 1px solid var(--primary-neon-emerald);
+      border-radius: 6px;
+      padding: 10px 12px;
+      color: var(--text-white);
+      font-weight: 700;
+      font-size: 14px;
+      font-family: inherit;
+      outline: none;
+    }
+
+    .identity-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 10px;
+      font-size: 12px;
+    }
+
+    .mono-id {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      color: var(--primary-neon-emerald);
+    }
+
+    /* Buttons */
+    .mat-btn {
+      width: 100%;
+      padding: 11px 16px;
+      border-radius: 6px;
+      font-weight: 700;
+      font-size: 12px;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      transition: opacity 0.15s ease;
+    }
+
+    .mat-btn:active {
+      opacity: 0.85;
+    }
+
+    .btn-moss {
+      background: var(--primary-moss-green);
+      color: var(--text-white);
+      margin-top: 12px;
+    }
+
+    .btn-surface {
+      background: var(--bg-surface-secondary);
+      color: var(--primary-neon-emerald);
+      border: 1px solid var(--border-subtle);
+      margin-top: 10px;
+    }
+
+    .btn-emerald {
+      background: var(--primary-neon-emerald);
+      color: #000000;
+    }
+
+    .btn-red {
+      background: var(--status-red);
+      color: var(--text-white);
+    }
+
+    /* Permission Table Rows */
+    .perm-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 6px;
+      font-size: 12px;
+    }
+
+    .perm-badge {
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .perm-badge.granted {
+      color: var(--primary-neon-emerald);
+    }
+
+    /* Collection Status Section */
+    .status-text {
+      font-size: 18px;
+      font-weight: 800;
+      margin-top: 4px;
+      transition: color 0.2s ease;
+    }
+
+    .status-active {
+      color: var(--primary-neon-emerald);
+    }
+
+    .status-stopped {
+      color: var(--status-red);
+    }
+
+    .button-duo {
+      display: flex;
+      gap: 12px;
+      margin-top: 14px;
+    }
+
+    .button-duo .mat-btn {
+      flex: 1;
+    }
+
+    /* Telemetry Detail Rows */
+    .telemetry-val {
+      font-size: 13px;
+      color: var(--text-white);
+      margin-top: 8px;
+    }
+
+    .telemetry-sub {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .telemetry-hash {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--primary-neon-emerald);
+      margin-top: 4px;
+      word-break: break-all;
+    }
+
+    .counter-row {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 12px;
+      font-size: 12px;
+    }
+
+    /* Android Gesture Bar */
+    .android-nav-bar {
+      height: 24px;
+      background: var(--bg-dark);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .gesture-pill {
+      width: 120px;
+      height: 4px;
+      background: #3B4D44;
+      border-radius: 9999px;
+    }
+
+    /* Live Toast Simulator */
+    .android-toast {
+      position: absolute;
+      bottom: 40px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(23, 34, 29, 0.95);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-white);
+      padding: 8px 18px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+      z-index: 200;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    }
+    .android-toast.show {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="device-stage">
+    <div class="badge-bar">
+      <span>Android XML Architecture: <strong>activity_main.xml</strong></span>
+      <span>•</span>
+      <span>Color System: <strong>#000000 × #608D83 × #39FFB8</strong></span>
+    </div>
+
+    <!-- Phone Chassis Frame -->
+    <div class="phone-chassis">
+      
+      <!-- Notch / Camera -->
+      <div class="phone-notch">
+        <div class="notch-camera"></div>
+      </div>
+
+      <!-- System Status Bar -->
+      <div class="android-status-bar">
+        <span id="android-clock">09:41</span>
+        <div class="status-icons">
+          <svg width="15" height="15" fill="currentColor" viewBox="0 0 24 24"><path d="M12 3c-4.97 0-9 4.03-9 9 0 2.12.74 4.07 1.97 5.61L4.35 18.25C4.15 18.45 4.15 18.77 4.35 18.97c.2.2.51.2.71 0l.64-.64C7.26 19.98 9.5 21 12 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm0 16c-3.86 0-7-3.14-7-7s3.14-7 7-7 7 3.14 7 7-3.14 7-7 7z"/></svg>
+          <svg width="15" height="15" fill="currentColor" viewBox="0 0 24 24"><path d="M12 4C7.31 4 3.07 5.9 0 8.98L12 21 24 8.98C20.93 5.9 16.69 4 12 4z"/></svg>
+          <svg width="15" height="15" fill="currentColor" viewBox="0 0 24 24"><path d="M17 4h-3V2h-4v2H7v18h10V4z"/></svg>
+        </div>
+      </div>
+
+      <!-- Scrollable Activity Content -->
+      <div class="app-screen">
+        
+        <!-- Header Banner -->
+        <div class="header-banner">
+          <div class="brand-tx-icon">TX</div>
+          <div class="header-titles">
+            <h1>TraceX</h1>
+            <p>Authorized Forensic Collection</p>
+          </div>
+        </div>
+
+        <!-- Case Authorization Card -->
+        <div class="material-card">
+          <div class="card-title">AUTHORIZED CASE IDENTIFIER</div>
+          <div class="input-group">
+            <input type="text" id="case-input" class="input-field" value="CASE-2026-001">
+          </div>
+          <div class="identity-row">
+            <span style="color: var(--text-muted);">Device Identity:</span>
+            <span class="mono-id" id="dev-id-display">DEV-ANDROID-01</span>
+          </div>
+          <button class="mat-btn btn-moss" id="btn-update-case">Verify &amp; Update Case</button>
+        </div>
+
+        <!-- Permission Center Card -->
+        <div class="material-card">
+          <div class="card-title">PERMISSION &amp; COMPLIANCE CENTER</div>
+          <div class="card-desc">TraceX requires explicit device permissions to record authorized telemetry and communications.</div>
+          
+          <div class="perm-row">
+            <span>GPS Location:</span>
+            <span class="perm-badge granted" id="perm-gps">GRANTED</span>
+          </div>
+          <div class="perm-row">
+            <span>Foreground Notification:</span>
+            <span class="perm-badge granted" id="perm-notif">GRANTED</span>
+          </div>
+          <div class="perm-row">
+            <span>Call Logs:</span>
+            <span class="perm-badge granted" id="perm-call">GRANTED</span>
+          </div>
+          <div class="perm-row">
+            <span>SMS Messages:</span>
+            <span class="perm-badge granted" id="perm-sms">GRANTED</span>
+          </div>
+
+          <button class="mat-btn btn-surface" id="btn-perm">Request / Review Permissions</button>
+        </div>
+
+        <!-- Collection Control Card -->
+        <div class="material-card">
+          <div class="card-title">COLLECTION SESSION STATUS</div>
+          <div class="status-text status-active" id="session-status">COLLECTION ACTIVE</div>
+          
+          <div class="button-duo">
+            <button class="mat-btn btn-emerald" id="btn-start">START</button>
+            <button class="mat-btn btn-red" id="btn-stop">STOP</button>
+          </div>
+        </div>
+
+        <!-- Live Evidence Telemetry Card -->
+        <div class="material-card">
+          <div class="card-title">EVIDENCE TELEMETRY MONITOR</div>
+          <div class="telemetry-val" id="telemetry-coords">Last Coordinates: 37.78200, -122.41100 (±2.9m)</div>
+          <div class="telemetry-sub" id="telemetry-speed">Movement: Moving (4.3 km/h)</div>
+          <div class="telemetry-hash" id="telemetry-hash">Evidence Hash: 3a7bd3e2360a3d29eea436fcfb7e...</div>
+          
+          <div class="counter-row">
+            <span style="color: var(--text-muted);" id="queue-val">Queue: 0 pending</span>
+            <span style="color: var(--status-green); font-weight: 700;" id="synced-val">Synced: 4 events</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Android Bottom Gesture Bar -->
+      <div class="android-nav-bar">
+        <div class="gesture-pill"></div>
+      </div>
+
+      <!-- Toast Notification Simulation -->
+      <div class="android-toast" id="phone-toast">TraceX Notification</div>
+
+    </div>
+  </div>
+
+  <script>
+    // Live Clock in Status Bar
+    function updateClock() {
+      const d = new Date();
+      const h = String(d.getHours()).padStart(2, '0');
+      const m = String(d.getMinutes()).padStart(2, '0');
+      document.getElementById('android-clock').textContent = `${h}:${m}`;
+    }
+    updateClock();
+    setInterval(updateClock, 1000);
+
+    function showToast(msg) {
+      const toast = document.getElementById('phone-toast');
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2200);
+    }
+
+    // Interactive button controls replicating Android MainActivity logic
+    const statusEl = document.getElementById('session-status');
+    const startBtn = document.getElementById('btn-start');
+    const stopBtn = document.getElementById('btn-stop');
+    const updateCaseBtn = document.getElementById('btn-update-case');
+    const permBtn = document.getElementById('btn-perm');
+
+    startBtn.addEventListener('click', () => {
+      statusEl.textContent = 'COLLECTION ACTIVE';
+      statusEl.className = 'status-text status-active';
+      showToast('LiveTelemetryService started in foreground');
+    });
+
+    stopBtn.addEventListener('click', () => {
+      statusEl.textContent = 'COLLECTION STOPPED';
+      statusEl.className = 'status-text status-stopped';
+      showToast('LiveTelemetryService terminated');
+    });
+
+    updateCaseBtn.addEventListener('click', () => {
+      const caseVal = document.getElementById('case-input').value.trim();
+      showToast(`Verified enrollment for Case ${caseVal}`);
+    });
+
+    permBtn.addEventListener('click', () => {
+      showToast('All forensic capture permissions are active');
+    });
+
+    // Real-time simulated telemetry coordinate jitter
+    let counter = 4;
+    setInterval(() => {
+      if (statusEl.textContent.includes('ACTIVE')) {
+        counter++;
+        const lat = (37.7820 + (Math.sin(Date.now() / 5000) * 0.002)).toFixed(5);
+        const lng = (-122.4110 + (Math.cos(Date.now() / 5000) * 0.002)).toFixed(5);
+        document.getElementById('telemetry-coords').textContent = `Last Coordinates: ${lat}, ${lng} (±2.8m)`;
+        document.getElementById('synced-val').textContent = `Synced: ${counter} events`;
+      }
+    }, 4000);
+  </script>
+</body>
+</html>
