@@ -22,6 +22,9 @@ export async function loadCustody() {
 function updateCustodyMetrics() {
   const countEl = document.getElementById('metric-custody-count');
   if (countEl) countEl.textContent = custodyEntries.length;
+
+  const mobileCountCustody = document.getElementById('mobile-count-custody');
+  if (mobileCountCustody) mobileCountCustody.textContent = custodyEntries.length;
 }
 
 export function renderCustodyTimeline() {

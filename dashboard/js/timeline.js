@@ -65,8 +65,8 @@ function renderTimelineLayout() {
 }
 
 export function renderTimelineEvents() {
-  const streamEl = document.getElementById('tl-events-stream');
-  if (!streamEl) return;
+  const streamEls = document.querySelectorAll('.timeline-events-stream');
+  if (streamEls.length === 0) return;
 
   // Aggregate events from global caches
   const allEvents = [];
@@ -160,11 +160,13 @@ export function renderTimelineEvents() {
   });
 
   if (filtered.length === 0) {
-    streamEl.innerHTML = `<div class="text-muted" style="text-align: center; padding: 48px;">No chronological events match the current criteria.</div>`;
+    streamEls.forEach(el => {
+      el.innerHTML = `<div class="text-muted" style="text-align: center; padding: 48px;">No chronological events match the current criteria.</div>`;
+    });
     return;
   }
 
-  streamEl.innerHTML = filtered.map(ev => {
+  const html = filtered.map(ev => {
     const timeStr = ev.timestamp ? new Date(ev.timestamp).toUTCString() : 'N/A';
     return `
       <div class="timeline-row type-${ev.type}">
@@ -185,4 +187,8 @@ export function renderTimelineEvents() {
       </div>
     `;
   }).join('');
+
+  streamEls.forEach(el => {
+    el.innerHTML = html;
+  });
 }

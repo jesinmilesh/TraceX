@@ -156,6 +156,15 @@ function updateTelemetryMetrics() {
   const countEl = document.getElementById('metric-telemetry-events');
   if (countEl) countEl.textContent = telemetryEvents.length;
 
+  const mobileCountGps = document.getElementById('mobile-count-gps');
+  if (mobileCountGps) mobileCountGps.textContent = telemetryEvents.length;
+
+  const mobileCountCalls = document.getElementById('mobile-count-calls');
+  if (mobileCountCalls) mobileCountCalls.textContent = callLogs.length;
+
+  const mobileCountMsgs = document.getElementById('mobile-count-messages');
+  if (mobileCountMsgs) mobileCountMsgs.textContent = messagesList.length;
+
   const latestEl = document.getElementById('metric-latest-telemetry');
   if (latestEl) {
     if (telemetryEvents.length > 0 && telemetryEvents[0].latitude && telemetryEvents[0].longitude) {

@@ -19,7 +19,7 @@ export function renderAuditTable() {
   const tbody = document.getElementById('audit-table-body');
   if (!tbody) return;
 
-  if (!auditLogs || auditLogs.length === 0) {
+  if (!Array.isArray(auditLogs) || auditLogs.length === 0) {
     tbody.innerHTML = `<tr><td colspan="6" class="text-muted" style="text-align: center; padding: 24px;">No audit trail events found for this case.</td></tr>`;
     return;
   }

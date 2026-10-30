@@ -7,6 +7,10 @@ export function getActiveCaseId() {
   return activeCaseId || localStorage.getItem('tracex_active_case_id');
 }
 
+export function getCasesList() {
+  return casesList;
+}
+
 export function setActiveCaseId(caseId) {
   const previousId = activeCaseId;
   activeCaseId = caseId;

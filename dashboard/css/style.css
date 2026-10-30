@@ -1,45 +1,45 @@
 /* ==============================================================================
-   Project TraceX — Enterprise Forensic Investigation Workbench
-   Visual System: Dark Graphite & Deep-Navy
-   Main: #0B0F14 | Sidebar: #0E141B | Panel: #121A23 | Elevated: #18232E
-   Primary Accent: #42E8C4 | Secondary: #8AA9FF | Text: #E8EEF5 / #9AAABD
-   Borders: #263442 | Warning: #F5B84B | Error: #F16D78
+   Project TraceX — Enterprise Mobile & SOC Web Interface
+   Design System Tokens (Deep Charcoal & Dark Navy-Teal)
+   Background: #070B0D | Sidebar: #0D1514 | Panel: #111C19 | Elevated: #172521
+   Primary Accent: #27F5B4 | Secondary: #8CA6B5 | Text: #F0F5F3 / #9DAEAA
+   Borders: #263B35 | Warning: #F4B942 | Error: #EF4444
    ============================================================================== */
 
 :root {
-  /* Core Visual System Palette */
-  --bg-main: #0B0F14;
-  --bg-sidebar: #0E141B;
-  --bg-panel: #121A23;
-  --bg-panel-secondary: #18232E;
-  --bg-panel-hover: #1E2D3B;
-  --bg-input: #080D12;
-  --bg-elevated: #18232E;
+  /* Official TraceX Mandatory Palette */
+  --bg-main: #070B0D;
+  --bg-sidebar: #0D1514;
+  --bg-panel: #111C19;
+  --bg-panel-secondary: #172521;
+  --bg-panel-hover: #1D302B;
+  --bg-input: #0A110F;
+  --bg-elevated: #172521;
 
   /* Restrained Structural Borders */
-  --border-color: #263442;
-  --border-subtle: #1C2733;
-  --border-focus: #42E8C4;
-  --border-secondary: #8AA9FF;
+  --border-color: #263B35;
+  --border-subtle: #192723;
+  --border-focus: #27F5B4;
+  --border-secondary: #8CA6B5;
 
   /* Typography Scale & Colors */
-  --text-primary: #E8EEF5;
-  --text-secondary: #9AAABD;
-  --text-muted: #6B7C91;
-  --text-dim: #4B5A6B;
+  --text-primary: #F0F5F3;
+  --text-secondary: #9DAEAA;
+  --text-muted: #647571;
+  --text-dim: #455450;
 
   /* Accent Identifiers */
-  --color-accent: #42E8C4;       /* Primary Aquamarine Accent */
-  --color-secondary: #8AA9FF;    /* Periwinkle Supporting Accent */
-  --color-cyan: #42E8C4;         /* Backwards-compatibility alias */
-  --color-emerald: #42E8C4;      /* Backwards-compatibility alias */
-  --color-moss: #8AA9FF;         /* Backwards-compatibility alias */
-  --color-blue: #8AA9FF;
-  --color-warning: #F5B84B;
-  --color-amber: #F5B84B;
-  --color-error: #F16D78;
-  --color-rose: #F16D78;
-  --color-success: #42E8C4;
+  --color-accent: #27F5B4;       /* Primary Electric Mint/Teal */
+  --color-secondary: #8CA6B5;    /* Slate Blue Supporting Accent */
+  --color-cyan: #27F5B4;         /* Backwards-compatibility alias */
+  --color-emerald: #27F5B4;      /* Backwards-compatibility alias */
+  --color-moss: #8CA6B5;         /* Backwards-compatibility alias */
+  --color-blue: #8CA6B5;
+  --color-warning: #F4B942;
+  --color-amber: #F4B942;
+  --color-error: #EF4444;
+  --color-rose: #EF4444;
+  --color-success: #27F5B4;
 
   /* Typography */
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -49,6 +49,7 @@
   --radius-sm: 4px;
   --radius-md: 6px;
   --radius-lg: 8px;
+  --radius-xl: 12px;
   --radius-full: 9999px;
 
   /* Sidebar width */
@@ -91,8 +92,8 @@ body {
 
 /* Custom Scrollbars */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 ::-webkit-scrollbar-track {
   background: var(--bg-main);
@@ -116,8 +117,7 @@ body {
   font-family: var(--font-mono);
 }
 
-.text-cyan, .text-emerald { color: var(--color-accent) !important; }
-.text-accent { color: var(--color-accent) !important; }
+.text-cyan, .text-emerald, .text-accent { color: var(--color-accent) !important; }
 .text-secondary-accent { color: var(--color-secondary) !important; }
 .text-amber, .text-warning { color: var(--color-warning) !important; }
 .text-rose, .text-error { color: var(--color-error) !important; }
@@ -142,27 +142,27 @@ body {
 }
 
 .badge-cyan, .badge-emerald, .badge-accent {
-  background: rgba(66, 232, 196, 0.1);
+  background: rgba(39, 245, 180, 0.1);
   color: var(--color-accent);
-  border-color: rgba(66, 232, 196, 0.3);
+  border-color: rgba(39, 245, 180, 0.3);
 }
 
 .badge-secondary, .badge-blue {
-  background: rgba(138, 169, 255, 0.1);
+  background: rgba(140, 166, 181, 0.1);
   color: var(--color-secondary);
-  border-color: rgba(138, 169, 255, 0.3);
+  border-color: rgba(140, 166, 181, 0.3);
 }
 
 .badge-amber, .badge-warning {
-  background: rgba(245, 184, 75, 0.1);
+  background: rgba(244, 185, 66, 0.1);
   color: var(--color-warning);
-  border-color: rgba(245, 184, 75, 0.3);
+  border-color: rgba(244, 185, 66, 0.3);
 }
 
 .badge-rose, .badge-error {
-  background: rgba(241, 109, 120, 0.1);
+  background: rgba(239, 68, 68, 0.1);
   color: var(--color-error);
-  border-color: rgba(241, 109, 120, 0.3);
+  border-color: rgba(239, 68, 68, 0.3);
 }
 
 .badge-neutral {
@@ -176,8 +176,8 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: rgba(245, 184, 75, 0.1);
-  border: 1px solid rgba(245, 184, 75, 0.35);
+  background: rgba(244, 185, 66, 0.1);
+  border: 1px solid rgba(244, 185, 66, 0.35);
   color: var(--color-warning);
   padding: 2px 8px;
   border-radius: var(--radius-sm);
@@ -233,20 +233,20 @@ body {
   cursor: not-allowed;
 }
 
-/* Primary Action Button: Electric Aquamarine with Dark Graphite Contrast */
+/* Primary Action Button: Electric Mint with Dark Contrast */
 .btn-primary {
   background: var(--color-accent);
-  color: #070B0E;
+  color: #05100C;
   border-color: var(--color-accent);
   font-weight: 700;
 }
 .btn-primary:hover:not(:disabled) {
-  background: #36D8B4;
-  border-color: #36D8B4;
+  background: #1EE0A2;
+  border-color: #1EE0A2;
   color: #000000;
 }
 
-/* Secondary Button: Elevated Navy Slate */
+/* Secondary Button: Elevated Navy-Teal */
 .btn-secondary {
   background: var(--bg-panel-secondary);
   color: var(--text-primary);
@@ -258,12 +258,12 @@ body {
 }
 
 .btn-cyan, .btn-emerald, .btn-accent {
-  background: rgba(66, 232, 196, 0.1);
+  background: rgba(39, 245, 180, 0.1);
   color: var(--color-accent);
-  border-color: rgba(66, 232, 196, 0.35);
+  border-color: rgba(39, 245, 180, 0.35);
 }
 .btn-cyan:hover:not(:disabled), .btn-emerald:hover:not(:disabled), .btn-accent:hover:not(:disabled) {
-  background: rgba(66, 232, 196, 0.2);
+  background: rgba(39, 245, 180, 0.2);
   border-color: var(--color-accent);
 }
 

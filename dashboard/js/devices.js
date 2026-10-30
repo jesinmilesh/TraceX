@@ -5,6 +5,10 @@ import { selectDeviceOnMap } from './telemetry.js';
 let devicesList = [];
 let activeDetailDevice = null;
 
+export function getDevicesList() {
+  return devicesList;
+}
+
 export async function loadDevices() {
   const caseId = getActiveCaseId();
   if (!caseId) return;

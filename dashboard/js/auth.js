@@ -27,8 +27,10 @@ export function initAuth(onLoginSuccess) {
 
   function updateAuthUI() {
     const user = getStoredUser();
+    const bottomNav = document.getElementById('mobile-bottom-nav');
     if (isAuthenticated() && user) {
       if (authOverlay) authOverlay.style.display = 'none';
+      if (bottomNav && window.innerWidth <= 768) bottomNav.style.display = 'flex';
       const userNameEl = document.getElementById('current-user-name');
       const userRoleEl = document.getElementById('current-user-role');
       const userAvatarEl = document.getElementById('current-user-avatar');
@@ -41,6 +43,7 @@ export function initAuth(onLoginSuccess) {
       }
     } else {
       if (authOverlay) authOverlay.style.display = 'flex';
+      if (bottomNav) bottomNav.style.display = 'none';
     }
   }
 

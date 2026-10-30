@@ -55,6 +55,17 @@ export function switchView(viewName) {
     }
   });
 
+  // Update mobile bottom nav active state
+  document.querySelectorAll('.mobile-nav-item').forEach(btn => {
+    const dest = btn.getAttribute('data-mobile-dest');
+    let isActive = false;
+    if (viewName === 'overview' && dest === 'home') isActive = true;
+    else if (viewName === 'evidence' && dest === 'evidence') isActive = true;
+    else if (viewName === 'timeline' && dest === 'history') isActive = true;
+    else if (dest === 'more' && !['overview', 'evidence', 'timeline'].includes(viewName)) isActive = true;
+    btn.classList.toggle('active', isActive);
+  });
+
   // Close mobile sidebar on navigation
   closeMobileSidebar();
 
@@ -73,6 +84,9 @@ export function switchView(viewName) {
           initLeafletMap('overview-map-canvas');
         }
       }, 150);
+      break;
+    case 'timeline':
+      setTimeout(() => initForensicTimeline('mobile-history-timeline-mount'), 100);
       break;
     case 'map':
       loadDevices();
@@ -144,7 +158,22 @@ export async function initDashboardData() {
     initWorkbench();
     initForensicTimeline('forensic-timeline-view');
     initLeafletMap('overview-map-canvas');
+    updateMobileHomeInfo();
   }, 200);
+}
+
+export function updateMobileHomeInfo() {
+  const caseSelect = document.getElementById('global-case-select');
+  const titleEl = document.getElementById('mobile-case-title');
+  const idEl = document.getElementById('mobile-case-id');
+  if (caseSelect && titleEl && idEl) {
+    const selectedOption = caseSelect.options[caseSelect.selectedIndex];
+    if (selectedOption && selectedOption.value) {
+      idEl.textContent = selectedOption.value;
+      const parts = selectedOption.text.split('—');
+      titleEl.textContent = parts.length > 1 ? parts.slice(1).join('—').trim() : selectedOption.text;
+    }
+  }
 }
 
 function updateDemoModeUI() {
@@ -275,6 +304,51 @@ document.addEventListener('DOMContentLoaded', () => {
   if (clearTrailBtn) {
     clearTrailBtn.addEventListener('click', () => {
       clearMapVisualTrail();
+    });
+  }
+
+  // Mobile Bottom Navigation Bar Destinations
+  document.querySelectorAll('.mobile-nav-item').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const dest = btn.getAttribute('data-mobile-dest');
+      if (dest === 'home') {
+        switchView('overview');
+      } else if (dest === 'evidence') {
+        switchView('evidence');
+      } else if (dest === 'history') {
+        switchView('timeline');
+      } else if (dest === 'more') {
+        openMobileSidebar();
+      }
+    });
+  });
+
+  // Mobile Topbar Hamburger / Drawer Button
+  const mobileMenuDrawerBtn = document.getElementById('mobile-btn-menu-drawer');
+  if (mobileMenuDrawerBtn) {
+    mobileMenuDrawerBtn.addEventListener('click', () => {
+      openMobileSidebar();
+    });
+  }
+
+  // Mobile Collection Status Toggle
+  const mobileToggleCollection = document.getElementById('mobile-btn-toggle-collection');
+  let mobileCollectionRunning = true;
+  if (mobileToggleCollection) {
+    mobileToggleCollection.addEventListener('click', () => {
+      mobileCollectionRunning = !mobileCollectionRunning;
+      const statusText = document.getElementById('mobile-collection-status-text');
+      if (mobileCollectionRunning) {
+        mobileToggleCollection.innerHTML = '<span class="pulse-dot" style="background: #05100C;"></span> Collection Running';
+        mobileToggleCollection.className = 'btn btn-primary';
+        if (statusText) statusText.textContent = 'ACTIVE';
+        showToast('Forensic acquisition streaming resumed', 'success');
+      } else {
+        mobileToggleCollection.innerHTML = '<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#EF4444;margin-right:6px;"></span> Collection Paused';
+        mobileToggleCollection.className = 'btn btn-secondary';
+        if (statusText) statusText.textContent = 'PAUSED';
+        showToast('Forensic telemetry collection paused by investigator', 'warning');
+      }
     });
   }
 
