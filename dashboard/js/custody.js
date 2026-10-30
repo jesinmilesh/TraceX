@@ -2,6 +2,7 @@ import { api, showToast, escapeHtml } from './api.js';
 import { getActiveCaseId } from './cases.js';
 
 let custodyEntries = [];
+export function getCustodyEntries() { return custodyEntries; }
 
 export async function loadCustody() {
   const caseId = getActiveCaseId();
@@ -9,8 +10,10 @@ export async function loadCustody() {
 
   try {
     custodyEntries = await api.get(`/custody/case/${encodeURIComponent(caseId)}`);
+    window.__tracex_custody_cache = custodyEntries;
     renderCustodyTimeline();
     updateCustodyMetrics();
+    window.dispatchEvent(new CustomEvent('custody:updated', { detail: { custodyEntries } }));
   } catch (err) {
     console.error('Failed to load custody chain:', err);
   }

@@ -1,5 +1,5 @@
 /**
- * Project TraceX - Main Application Orchestrator & View Switcher
+ * Project TraceX - Enterprise Forensic Investigation Workbench Orchestrator
  * Pure Vanilla JavaScript ES6 Module
  */
 
@@ -13,7 +13,8 @@ import {
   loadMessages,
   initLeafletMap,
   filterLocationHistory,
-  clearMapVisualTrail
+  clearMapVisualTrail,
+  scrubMapTimeline
 } from './telemetry.js';
 import { initEvidence, loadEvidence } from './evidence.js';
 import { initCustody, loadCustody } from './custody.js';
@@ -22,7 +23,12 @@ import { initReports, loadReportPreview } from './reports.js';
 import { isDemoMode, setDemoMode, DEMO_USER } from './demo.js';
 import { showToast } from './api.js';
 
+import { initEvidenceGraph, fitGraphToScreen, refreshGraphData, selectGraphNode } from './graph.js';
+import { initWorkbench, loadWorkbenchArtifacts, openArtifactInWorkbench } from './workbench.js';
+import { initForensicTimeline, renderTimelineEvents } from './timeline.js';
+
 let activeViewName = 'overview';
+let activeOverviewMode = 'graph';
 
 export function getActiveView() {
   return activeViewName;
@@ -59,7 +65,14 @@ export function switchView(viewName) {
       loadTelemetryHistory();
       loadEvidence();
       loadCustody();
-      setTimeout(() => initLeafletMap('overview-map-canvas'), 150);
+      setTimeout(() => {
+        refreshGraphData();
+        loadWorkbenchArtifacts();
+        renderTimelineEvents();
+        if (activeOverviewMode === 'map') {
+          initLeafletMap('overview-map-canvas');
+        }
+      }, 150);
       break;
     case 'map':
       loadDevices();
@@ -96,13 +109,42 @@ export function switchView(viewName) {
   }
 }
 
+export function switchOverviewMode(modeName) {
+  activeOverviewMode = modeName;
+  document.querySelectorAll('.workspace-mode-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.getAttribute('data-mode') === modeName);
+  });
+  document.querySelectorAll('.overview-subview-panel').forEach(panel => {
+    panel.classList.toggle('active', panel.id === `overview-subview-${modeName}`);
+  });
+
+  if (modeName === 'graph') {
+    setTimeout(() => {
+      initEvidenceGraph('graph-viewport');
+      fitGraphToScreen();
+    }, 60);
+  } else if (modeName === 'workbench') {
+    initWorkbench();
+  } else if (modeName === 'map') {
+    setTimeout(() => initLeafletMap('overview-map-canvas'), 100);
+  } else if (modeName === 'timeline') {
+    initForensicTimeline('forensic-timeline-view');
+  }
+}
+
 export async function initDashboardData() {
   await loadCases();
   await loadDevices();
   await loadTelemetryHistory();
   await loadEvidence();
   await loadCustody();
-  setTimeout(() => initLeafletMap('overview-map-canvas'), 200);
+
+  setTimeout(() => {
+    initEvidenceGraph('graph-viewport');
+    initWorkbench();
+    initForensicTimeline('forensic-timeline-view');
+    initLeafletMap('overview-map-canvas');
+  }, 200);
 }
 
 function updateDemoModeUI() {
@@ -118,7 +160,7 @@ function updateDemoModeUI() {
   if (toggleBtn && labelEl) {
     if (active) {
       toggleBtn.className = 'btn btn-secondary btn-sm';
-      labelEl.innerHTML = '<span class="pulse-dot amber"></span> Demo Mode: ON';
+      labelEl.innerHTML = '<span class="pulse-dot warning"></span> Demo Mode: ON';
     } else {
       toggleBtn.className = 'btn btn-secondary btn-sm';
       labelEl.innerHTML = '<span class="pulse-dot"></span> Live SOC';
@@ -126,7 +168,16 @@ function updateDemoModeUI() {
   }
 }
 
-// ==================== MOBILE SIDEBAR TOGGLE ====================
+// ==================== SIDEBAR RAIL & MOBILE DRAWER ====================
+
+function toggleSidebarRail() {
+  const sidebar = document.getElementById('main-sidebar');
+  if (sidebar) {
+    sidebar.classList.toggle('rail-collapsed');
+    const isCollapsed = sidebar.classList.contains('rail-collapsed');
+    localStorage.setItem('tracex_rail_collapsed', isCollapsed ? 'true' : 'false');
+  }
+}
 
 function openMobileSidebar() {
   const sidebar = document.getElementById('main-sidebar');
@@ -145,7 +196,19 @@ function closeMobileSidebar() {
 // ==================== INITIALIZATION ====================
 
 document.addEventListener('DOMContentLoaded', () => {
-  // 0. Mobile sidebar toggle
+  // Restore sidebar rail state
+  if (localStorage.getItem('tracex_rail_collapsed') === 'true') {
+    const sidebar = document.getElementById('main-sidebar');
+    if (sidebar) sidebar.classList.add('rail-collapsed');
+  }
+
+  // Sidebar Rail Toggle
+  const railToggleBtn = document.getElementById('sidebar-rail-toggle');
+  if (railToggleBtn) {
+    railToggleBtn.addEventListener('click', toggleSidebarRail);
+  }
+
+  // Mobile sidebar toggle
   const mobileMenuBtn = document.getElementById('mobile-menu-btn');
   const sidebarOverlay = document.getElementById('sidebar-overlay');
 
@@ -164,7 +227,7 @@ document.addEventListener('DOMContentLoaded', () => {
     sidebarOverlay.addEventListener('click', closeMobileSidebar);
   }
 
-  // 1. Navigation item clicks
+  // Navigation item clicks
   document.querySelectorAll('.nav-item').forEach(el => {
     el.addEventListener('click', () => {
       const view = el.getAttribute('data-view');
@@ -172,7 +235,15 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // 2. Quick switch buttons inside cards
+  // Overview Investigation Mode Buttons
+  document.querySelectorAll('.workspace-mode-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const mode = btn.getAttribute('data-mode');
+      if (mode) switchOverviewMode(mode);
+    });
+  });
+
+  // Quick switch buttons inside cards / strips
   document.querySelectorAll('[data-switch-view]').forEach(el => {
     el.addEventListener('click', () => {
       const targetView = el.getAttribute('data-switch-view');
@@ -180,7 +251,16 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // 3. Live Map Time Filter Buttons
+  // Map Observation Timeline Scrubber Slider
+  const mapSlider = document.getElementById('map-timeline-slider');
+  if (mapSlider) {
+    mapSlider.addEventListener('input', (e) => {
+      const ratio = Number(e.target.value) / 100;
+      scrubMapTimeline(ratio);
+    });
+  }
+
+  // Live Map Time Filter Buttons
   document.querySelectorAll('.map-time-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.map-time-btn').forEach(b => b.classList.remove('active'));
@@ -190,7 +270,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // 4. Clear Visual Trail Button
+  // Clear Visual Trail Button
   const clearTrailBtn = document.getElementById('btn-clear-trail');
   if (clearTrailBtn) {
     clearTrailBtn.addEventListener('click', () => {
@@ -198,7 +278,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // 5. Demo Mode Toggle Switch
+  // Demo Mode Toggle Switch
   const demoToggleBtn = document.getElementById('btn-toggle-demo');
   if (demoToggleBtn) {
     demoToggleBtn.addEventListener('click', () => {
@@ -226,9 +306,25 @@ document.addEventListener('DOMContentLoaded', () => {
     updateDemoModeUI();
   });
 
+  // Data update events -> refresh subviews
+  window.addEventListener('case:changed', () => {
+    initDashboardData();
+  });
+  window.addEventListener('evidence:updated', () => {
+    refreshGraphData();
+    loadWorkbenchArtifacts();
+  });
+  window.addEventListener('telemetry:updated', () => {
+    refreshGraphData();
+    renderTimelineEvents();
+  });
+  window.addEventListener('custody:updated', () => {
+    refreshGraphData();
+  });
+
   updateDemoModeUI();
 
-  // 6. Initialize Modules & Auth
+  // Initialize Core Modules & Auth
   initAuth(() => {
     initDashboardData();
   });
@@ -240,18 +336,17 @@ document.addEventListener('DOMContentLoaded', () => {
   initReports();
   initWebSocket();
 
-  // If already authenticated, load initial data
   if (isAuthenticated()) {
     initDashboardData();
   }
 
-  // 6b. URL Hash Navigation support (e.g. #map, #devices)
+  // URL Hash Navigation support (e.g. #map, #devices)
   const initialHash = window.location.hash.replace('#', '');
   if (initialHash && ['overview', 'map', 'cases', 'devices', 'calls', 'messages', 'telemetry', 'evidence', 'custody', 'audit', 'reports'].includes(initialHash)) {
     switchView(initialHash);
   }
 
-  // 7. Forensic UTC Timestamp Clock in Topbar
+  // Forensic UTC Timestamp Clock in Topbar
   const clockEl = document.getElementById('utc-clock');
   function updateClock() {
     if (clockEl) {
@@ -261,7 +356,7 @@ document.addEventListener('DOMContentLoaded', () => {
   updateClock();
   setInterval(updateClock, 1000);
 
-  // 8. Close sidebar on Escape key
+  // Close sidebar on Escape key
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
       closeMobileSidebar();

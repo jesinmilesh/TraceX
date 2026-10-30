@@ -19,6 +19,10 @@ import { isDemoMode } from './demo.js';
 let telemetryEvents = [];
 let callLogs = [];
 let messagesList = [];
+
+export function getTelemetryEvents() { return telemetryEvents; }
+export function getCallLogs() { return callLogs; }
+export function getMessagesList() { return messagesList; }
 let ws = null;
 let reconnectTimer = null;
 let heartbeatInterval = null;
@@ -46,11 +50,13 @@ export async function loadTelemetryHistory() {
 
   try {
     telemetryEvents = await api.get(`/telemetry/${encodeURIComponent(caseId)}?limit=200`);
+    window.__tracex_telemetry_cache = telemetryEvents;
     renderTelemetryFeed();
     updateTelemetryMetrics();
     renderOverviewRecentEvents();
     updateOverviewDeviceSummary();
     updateMapData();
+    window.dispatchEvent(new CustomEvent('telemetry:updated', { detail: { telemetryEvents } }));
   } catch (err) {
     if (!isDemoMode()) {
       console.warn('Telemetry history load deferred (backend offline or awaiting records):', err.message);
@@ -68,6 +74,7 @@ export async function loadCallLogs() {
 
   try {
     callLogs = await api.get(`/telemetry/${encodeURIComponent(caseId)}/calls`);
+    window.__tracex_calls_cache = callLogs;
     renderCallLogs();
     renderOverviewRecentEvents();
   } catch (err) {
@@ -83,6 +90,7 @@ export async function loadMessages() {
 
   try {
     messagesList = await api.get(`/telemetry/${encodeURIComponent(caseId)}/messages`);
+    window.__tracex_messages_cache = messagesList;
     renderMessages();
     renderOverviewRecentEvents();
   } catch (err) {
@@ -475,23 +483,44 @@ export function updateMapData(customEvents = null) {
 
     deviceTracks[devId] = latLngs;
 
-    // 1. Draw Directional Movement Polyline Trail in Neon Emerald
+    // 1. Draw Directional Movement Polyline Trail in Electric Aquamarine
     if (!devicePolylines[devId]) {
       devicePolylines[devId] = window.L.polyline(latLngs, {
-        color: '#39FFB8',
-        weight: 3,
-        opacity: 0.9,
+        color: '#42E8C4',
+        weight: 2.5,
+        opacity: 0.85,
         smoothFactor: 1
       }).addTo(leafletMap);
     } else {
       devicePolylines[devId].setLatLngs(latLngs);
     }
 
+    // 1b. Distinct Recorded GPS Observation Fixes (Distinguished from interpolated line)
+    if (!deviceTracks[devId + '_markers']) deviceTracks[devId + '_markers'] = [];
+    deviceTracks[devId + '_markers'].forEach(m => m.remove());
+    deviceTracks[devId + '_markers'] = [];
+
+    devEvents.forEach((ev, idx) => {
+      const fixTime = ev.timestamp ? new Date(ev.timestamp).toLocaleTimeString() : `#${idx+1}`;
+      const circle = window.L.circleMarker([ev.latitude, ev.longitude], {
+        radius: 3.5,
+        fillColor: '#121A23',
+        color: '#42E8C4',
+        weight: 1.5,
+        fillOpacity: 0.95
+      }).bindTooltip(`Fix #${idx+1} [${fixTime}] ±${(ev.accuracy || 4.2).toFixed(1)}m`, {
+        direction: 'top',
+        className: 'mono'
+      }).addTo(leafletMap);
+
+      deviceTracks[devId + '_markers'].push(circle);
+    });
+
     // 2. Custom Pulsing Device Marker
     const markerHtml = `
       <div class="tracex-marker-pin">
-        <div class="pulse-ring"></div>
-        <div class="core-dot"></div>
+        <div class="pulse-ring" style="border-color: #42E8C4;"></div>
+        <div class="core-dot" style="background: #42E8C4;"></div>
       </div>
     `;
     const icon = window.L.divIcon({
@@ -502,13 +531,13 @@ export function updateMapData(customEvents = null) {
     });
 
     const popupContent = `
-      <div style="font-family: var(--font-sans); color: #f1f5f9; padding: 4px; min-width: 170px;">
-        <div style="font-size: 13px; font-weight: 700; color: #39FFB8;">${escapeHtml(devId)}</div>
-        <div style="font-size: 11px; color: #A7B3AE; margin-top: 2px;">Case: ${escapeHtml(latestEvent.case_id || 'N/A')}</div>
+      <div style="font-family: var(--font-sans); color: #E8EEF5; padding: 4px; min-width: 170px;">
+        <div style="font-size: 13px; font-weight: 700; color: #42E8C4;">${escapeHtml(devId)}</div>
+        <div style="font-size: 11px; color: #9AAABD; margin-top: 2px;">Case: ${escapeHtml(latestEvent.case_id || 'N/A')}</div>
         <div style="margin-top: 6px; font-family: var(--font-mono); font-size: 11px;">
           ${Number(latestEvent.latitude || 0).toFixed(6)}, ${Number(latestEvent.longitude || 0).toFixed(6)}
         </div>
-        <div style="margin-top: 4px; font-size: 11px; color: #39FFB8;">
+        <div style="margin-top: 4px; font-size: 11px; color: #42E8C4;">
           Speed: ${((latestEvent.speed || 0) * 3.6).toFixed(1)} km/h • ±${(latestEvent.accuracy || 0).toFixed(1)}m
         </div>
       </div>
@@ -537,6 +566,20 @@ export function updateMapData(customEvents = null) {
   }
 
   updateLiveStatusIndicators();
+}
+
+export function scrubMapTimeline(ratio) {
+  if (!leafletMap || telemetryEvents.length === 0) return;
+  const total = telemetryEvents.length;
+  const index = Math.max(0, Math.min(total - 1, Math.round(ratio * (total - 1))));
+  const targetEvent = telemetryEvents[index];
+  if (targetEvent && targetEvent.latitude && targetEvent.longitude) {
+    leafletMap.panTo([targetEvent.latitude, targetEvent.longitude], { animate: true });
+    const timeLabel = document.getElementById('map-scrubber-time');
+    if (timeLabel) {
+      timeLabel.textContent = targetEvent.timestamp ? new Date(targetEvent.timestamp).toLocaleTimeString() : `Fix #${index + 1}`;
+    }
+  }
 }
 
 export function selectDeviceOnMap(deviceId) {

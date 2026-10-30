@@ -93,56 +93,59 @@
     <aside class="sidebar" id="main-sidebar">
       <div class="brand-section">
         <div class="brand-icon">TX</div>
-        <div>
+        <div class="brand-text">
           <div class="brand-title">TRACEX SOC</div>
           <div class="brand-subtitle">Digital Forensics</div>
         </div>
+        <button id="sidebar-rail-toggle" class="rail-toggle-btn" title="Toggle Navigation Rail">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 19l-7-7 7-7m8 14l-7-7 7-7"></path></svg>
+        </button>
       </div>
 
       <ul class="nav-links">
         <li class="nav-item active" data-view="overview">
           <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
-          Overview
+          <span>Overview</span>
         </li>
         <li class="nav-item" data-view="map">
           <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg>
-          Live Map &amp; Trail
+          <span>Live Map &amp; Trail</span>
         </li>
         <li class="nav-item" data-view="cases">
           <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path></svg>
-          Investigation Cases
+          <span>Investigation Cases</span>
         </li>
         <li class="nav-item" data-view="devices">
           <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
-          Enrolled Devices
+          <span>Enrolled Devices</span>
         </li>
         <li class="nav-item" data-view="calls">
           <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
-          Live Call Logs
+          <span>Live Call Logs</span>
         </li>
         <li class="nav-item" data-view="messages">
           <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg>
-          Live Messages
+          <span>Live Messages</span>
         </li>
         <li class="nav-item" data-view="telemetry">
           <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-          Telemetry Feed
+          <span>Telemetry Feed</span>
         </li>
         <li class="nav-item" data-view="evidence">
           <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-          Evidence Vault
+          <span>Evidence Vault</span>
         </li>
         <li class="nav-item" data-view="custody">
           <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
-          Chain of Custody
+          <span>Chain of Custody</span>
         </li>
         <li class="nav-item" data-view="audit">
           <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
-          Audit Logs
+          <span>Audit Logs</span>
         </li>
         <li class="nav-item" data-view="reports">
           <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-          Report Export
+          <span>Report Export</span>
         </li>
       </ul>
 
@@ -155,7 +158,7 @@
           </div>
         </div>
         <button id="logout-btn" class="btn btn-secondary btn-sm" style="width: 100%;">
-          Terminate Session
+          <span>Terminate Session</span>
         </button>
       </div>
     </aside>
@@ -175,7 +178,7 @@
         <div class="topbar-status">
           <!-- Persistent Demo Mode Indicator -->
           <div id="demo-indicator-bar" class="demo-mode-badge" style="display: none;">
-            <span class="pulse-dot amber"></span> DEMO MODE
+            <span class="pulse-dot warning"></span> DEMO MODE
           </div>
 
           <!-- Mode Toggle Button -->
@@ -198,89 +201,155 @@
       <!-- Scrollable Body Views -->
       <div class="content-body">
         
-        <!-- VIEW 1: OVERVIEW -->
+        <!-- VIEW 1: ENTERPRISE INVESTIGATION WORKBENCH (OVERVIEW) -->
         <div id="view-overview" class="view-panel active">
           
-          <!-- Summary Metrics Cards -->
-          <div class="metrics-grid">
-            <div class="metric-card" data-switch-view="devices" style="cursor: pointer;">
-              <div class="metric-header">
-                <span class="metric-title">Active Devices</span>
-                <span class="badge badge-emerald">Online</span>
+          <!-- Compact Operational Command Bar -->
+          <div class="command-metrics-strip">
+            <div class="command-cell" data-switch-view="devices" title="Click to view enrolled endpoints">
+              <div class="command-cell-icon">📱</div>
+              <div class="command-cell-content">
+                <div class="command-cell-label">ACTIVE COLLECTORS</div>
+                <div class="command-cell-val">
+                  <span id="metric-active-devices" class="text-accent font-bold">0</span>
+                  <span class="badge badge-accent">ONLINE</span>
+                </div>
               </div>
-              <div id="metric-active-devices" class="metric-val text-emerald">0</div>
-              <div class="metric-footer">Authorized Android Collectors</div>
             </div>
 
-            <div class="metric-card" data-switch-view="map" style="cursor: pointer;">
-              <div class="metric-header">
-                <span class="metric-title">Telemetry Events</span>
-                <span class="badge badge-cyan">Live</span>
+            <div class="command-cell" data-switch-view="telemetry" title="Click to view telemetry stream">
+              <div class="command-cell-icon">📍</div>
+              <div class="command-cell-content">
+                <div class="command-cell-label">TELEMETRY INGESTION</div>
+                <div class="command-cell-val">
+                  <span id="metric-telemetry-events" class="text-primary font-bold">0</span>
+                  <span id="metric-latest-telemetry" class="mono text-muted" style="font-size: 10.5px;">Live feed</span>
+                </div>
               </div>
-              <div id="metric-telemetry-events" class="metric-val text-cyan">0</div>
-              <div id="metric-latest-telemetry" class="metric-footer mono">Awaiting fix...</div>
             </div>
 
-            <div class="metric-card" data-switch-view="evidence" style="cursor: pointer;">
-              <div class="metric-header">
-                <span class="metric-title">Evidence Artifacts</span>
-                <span class="badge badge-cyan">Vault</span>
+            <div class="command-cell" data-switch-view="evidence" title="Click to view evidence vault">
+              <div class="command-cell-icon">🔒</div>
+              <div class="command-cell-content">
+                <div class="command-cell-label">EVIDENCE VAULT</div>
+                <div class="command-cell-val">
+                  <span id="metric-evidence-count" class="text-primary font-bold">0</span>
+                  <span class="badge badge-neutral">SHA-256 SEALED</span>
+                </div>
               </div>
-              <div id="metric-evidence-count" class="metric-val">0</div>
-              <div class="metric-footer">SHA-256 Verified Storage</div>
             </div>
 
-            <div class="metric-card" data-switch-view="custody" style="cursor: pointer;">
-              <div class="metric-header">
-                <span class="metric-title">Chained Ledger</span>
-                <span class="badge badge-emerald">Tamper-Evident</span>
+            <div class="command-cell" data-switch-view="custody" title="Click to view custody chain">
+              <div class="command-cell-icon">⛓</div>
+              <div class="command-cell-content">
+                <div class="command-cell-label">CHAINED LEDGER</div>
+                <div class="command-cell-val">
+                  <span id="metric-custody-count" class="text-secondary-accent font-bold">0</span>
+                  <span class="badge badge-secondary">TAMPER-EVIDENT</span>
+                </div>
               </div>
-              <div id="metric-custody-count" class="metric-val text-emerald">0</div>
-              <div class="metric-footer">Chained Proof Blocks</div>
             </div>
           </div>
 
-          <!-- Main Workspace: Two-Column Layout -->
-          <div class="overview-workspace">
-            
-            <!-- Left Section: Live Map & Movement Trail -->
-            <div class="panel" style="margin-bottom: 0;">
-              <div class="panel-header">
-                <div class="panel-title">
-                  <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg>
-                  Real-Time Movement Map
-                </div>
-                <span class="badge badge-cyan">Leaflet</span>
-              </div>
-              <div class="panel-body" style="padding: 8px;">
-                <div id="overview-map-canvas" style="width: 100%; height: 380px; border-radius: var(--radius-md);"></div>
-              </div>
-            </div>
+          <!-- Investigation Mode Switcher -->
+          <div class="workspace-mode-selector">
+            <button class="workspace-mode-btn active" data-mode="graph">
+              <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="6" cy="6" r="3"></circle><circle cx="18" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle><path d="M9 6h6m-9 9l6-6m0 6V9"></path></svg>
+              Evidence Relationship Graph
+            </button>
+            <button class="workspace-mode-btn" data-mode="workbench">
+              <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg>
+              Forensic Analysis Workbench
+            </button>
+            <button class="workspace-mode-btn" data-mode="map">
+              <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg>
+              Geospatial Analysis &amp; Scrubber
+            </button>
+            <button class="workspace-mode-btn" data-mode="timeline">
+              <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg>
+              Chronological Master Timeline
+            </button>
+          </div>
 
-            <!-- Right Section: Recent Events Feed -->
-            <div class="panel" style="margin-bottom: 0;">
-              <div class="panel-header">
-                <div class="panel-title">
-                  <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                  Recent Events
-                </div>
-                <span class="badge badge-neutral">Chronological</span>
-              </div>
-              <div class="panel-body" style="padding: 10px;">
-                <div id="overview-recent-events" class="overview-events-list">
-                  <div style="padding: 24px 12px; text-align: center; color: var(--text-muted); font-size: 12px;">
-                    Awaiting live forensic telemetry...
+          <!-- SUBVIEW 1: EVIDENCE RELATIONSHIP GRAPH -->
+          <div id="overview-subview-graph" class="overview-subview-panel active">
+            <div class="graph-workspace-layout">
+              <!-- Left/Center: Graph Canvas -->
+              <div class="graph-canvas-wrapper">
+                <div class="graph-toolbar">
+                  <div class="graph-filter-pills">
+                    <button class="graph-filter-pill active" data-filter="all">All Entities</button>
+                    <button class="graph-filter-pill" data-filter="device">📱 Terminals</button>
+                    <button class="graph-filter-pill" data-filter="evidence">🔒 Evidence</button>
+                    <button class="graph-filter-pill" data-filter="call">📞 Calls</button>
+                    <button class="graph-filter-pill" data-filter="message">✉ SMS</button>
+                    <button class="graph-filter-pill" data-filter="custody">⛓ Ledger</button>
+                  </div>
+                  <div class="graph-search-container">
+                    <input type="text" id="graph-search-input" class="form-input form-input-sm" placeholder="Search node title, ID, checksum...">
+                  </div>
+                  <div class="graph-actions-group">
+                    <button id="btn-graph-zoom-in" class="btn btn-secondary btn-sm" title="Zoom In">+</button>
+                    <button id="btn-graph-zoom-out" class="btn btn-secondary btn-sm" title="Zoom Out">−</button>
+                    <button id="btn-graph-fit" class="btn btn-secondary btn-sm" title="Fit to Screen">⛶ Fit</button>
+                    <button id="btn-graph-reset" class="btn btn-secondary btn-sm" title="Reset View">↻ Reset</button>
                   </div>
                 </div>
+                <div id="graph-viewport" class="graph-svg-viewport"></div>
+              </div>
+
+              <!-- Right: Contextual Node Inspector -->
+              <aside class="graph-inspector-panel" id="graph-node-inspector">
+                <div class="inspector-empty-state">
+                  <svg width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4m0-4h.01"></path></svg>
+                  <div class="empty-title">Select Any Evidence Node</div>
+                  <div class="empty-desc">Click on any entity in the relationship graph to inspect cryptographic attributes, provenance, and linked records.</div>
+                </div>
+              </aside>
+            </div>
+          </div>
+
+          <!-- SUBVIEW 2: FORENSIC WORKBENCH -->
+          <div id="overview-subview-workbench" class="overview-subview-panel">
+            <div id="workbench-workspace"></div>
+          </div>
+
+          <!-- SUBVIEW 3: GEOSPATIAL ANALYSIS & TEMPORAL SCRUBBER -->
+          <div id="overview-subview-map" class="overview-subview-panel">
+            <div class="geospatial-workbench-layout">
+              <div class="map-controls-bar">
+                <div class="map-time-filters">
+                  <button class="map-time-btn active" data-range="live">Live</button>
+                  <button class="map-time-btn" data-range="1h">Last 1h</button>
+                  <button class="map-time-btn" data-range="6h">Last 6h</button>
+                  <button class="map-time-btn" data-range="today">Today</button>
+                  <button class="map-time-btn" data-range="all">All</button>
+                </div>
+                <div class="map-status-pill">
+                  <span id="map-device-status-badge" class="badge badge-accent"><span class="pulse-dot"></span> TRACKING</span>
+                  <span class="text-muted">Speed: <strong id="map-device-speed" class="text-accent">0.0 km/h</strong></span>
+                  <span class="text-muted">Accuracy: <strong id="map-device-accuracy" class="text-accent">±0.0 m</strong></span>
+                </div>
+              </div>
+
+              <div id="overview-map-canvas" style="width: 100%; height: 420px; border-radius: var(--radius-sm); border: 1px solid var(--border-color);"></div>
+
+              <!-- Chronological Timeline Scrubber Control -->
+              <div class="map-timeline-scrubber-bar">
+                <span class="scrubber-label">⏱ Observation Scrubber:</span>
+                <input type="range" id="map-timeline-slider" min="0" max="100" value="100" class="map-slider" style="flex: 1;">
+                <span id="map-scrubber-time" class="mono text-accent" style="font-size: 11px; min-width: 130px; text-align: right;">Latest Fix</span>
               </div>
             </div>
-
           </div>
 
-          <!-- Bottom: Device Summary Bar -->
-          <div id="overview-device-summary" class="device-summary-bar">
-            <!-- Dynamically injected via telemetry.js updateOverviewDeviceSummary() -->
+          <!-- SUBVIEW 4: MASTER TIMELINE -->
+          <div id="overview-subview-timeline" class="overview-subview-panel">
+            <div id="forensic-timeline-view"></div>
           </div>
+
+          <!-- Hardware Telemetry Bottom Strip -->
+          <div id="overview-device-summary" class="device-summary-bar" style="margin-top: 14px;"></div>
 
         </div>
 

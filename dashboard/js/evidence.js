@@ -2,6 +2,7 @@ import { api, showToast, escapeHtml } from './api.js';
 import { getActiveCaseId } from './cases.js';
 
 let evidenceList = [];
+export function getEvidenceList() { return evidenceList; }
 
 export async function loadEvidence() {
   const caseId = getActiveCaseId();
@@ -9,8 +10,10 @@ export async function loadEvidence() {
 
   try {
     evidenceList = await api.get(`/evidence/case/${encodeURIComponent(caseId)}`);
+    window.__tracex_evidence_cache = evidenceList;
     renderEvidenceTable();
     updateEvidenceMetrics();
+    window.dispatchEvent(new CustomEvent('evidence:updated', { detail: { evidenceList } }));
   } catch (err) {
     console.error('Failed to load evidence:', err);
   }
