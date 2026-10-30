@@ -22,6 +22,7 @@ import { initAudit, loadAuditLogs } from './audit.js';
 import { initReports, loadReportPreview } from './reports.js';
 import { isDemoMode, setDemoMode, DEMO_USER } from './demo.js';
 import { showToast } from './api.js';
+import { isValidCoordinate, renderGoogleMapsButton } from './maps.js';
 
 import { initEvidenceGraph, fitGraphToScreen, refreshGraphData, selectGraphNode } from './graph.js';
 import { initWorkbench, loadWorkbenchArtifacts, openArtifactInWorkbench } from './workbench.js';
@@ -172,6 +173,14 @@ export function updateMobileHomeInfo() {
       idEl.textContent = selectedOption.value;
       const parts = selectedOption.text.split('—');
       titleEl.textContent = parts.length > 1 ? parts.slice(1).join('—').trim() : selectedOption.text;
+    }
+  }
+
+  const gmapsContainer = document.getElementById('mobile-case-gmaps-link');
+  if (gmapsContainer && window.__tracex_telemetry_cache && window.__tracex_telemetry_cache.length > 0) {
+    const t = window.__tracex_telemetry_cache[0];
+    if (isValidCoordinate(t.latitude, t.longitude)) {
+      gmapsContainer.innerHTML = renderGoogleMapsButton(t.latitude, t.longitude, 'Maps ↗', 'btn-xs');
     }
   }
 }

@@ -15,6 +15,7 @@
 import { escapeHtml } from './api.js';
 import { getActiveCaseId, getCasesList } from './cases.js';
 import { getDevicesList } from './devices.js';
+import { isValidCoordinate, renderGoogleMapsButton, renderLocationObservationCard } from './maps.js';
 
 let graphContainer = null;
 let svgEl = null;
@@ -703,6 +704,17 @@ function renderNodeInspector(node) {
         <div class="inspector-prop-label">NETWORK INTERFACE</div>
         <div class="mono text-primary">${escapeHtml(net)}</div>
       </div>
+      ${(isValidCoordinate(d.latitude, d.longitude) || (d.location && isValidCoordinate(d.location.latitude, d.location.longitude))) ? `
+        <div class="inspector-prop-group" style="margin-top: 8px;">
+          <div class="inspector-prop-label">LAST RECORDED COORDINATES</div>
+          <div style="display:flex; justify-content:space-between; align-items:center; background:var(--bg-input); padding:6px 8px; border-radius:var(--radius-sm); border:1px solid var(--border-color);">
+            <span class="mono text-primary font-bold" style="font-size:11px;">
+              ${Number(d.latitude || d.location.latitude).toFixed(6)}, ${Number(d.longitude || d.location.longitude).toFixed(6)}
+            </span>
+            ${renderGoogleMapsButton(d.latitude || d.location.latitude, d.longitude || d.location.longitude, 'Maps ↗', 'btn-xs')}
+          </div>
+        </div>
+      ` : ''}
     `;
   } else if (node.type === 'call') {
     specificDetailsHtml = `

@@ -192,7 +192,7 @@
 }
 
 .nav-item.active {
-  background: rgba(66, 232, 196, 0.08);
+  background: rgba(0, 166, 255, 0.12);
   color: var(--color-accent);
   border-left-color: var(--color-accent);
   font-weight: 600;
@@ -1918,7 +1918,7 @@
     left: 0;
     right: 0;
     height: 56px;
-    background: #070B0D;
+    background: #080D18;
     border-top: 1px solid var(--border-color);
     z-index: 1000;
     justify-content: space-around;
@@ -1959,11 +1959,11 @@
   }
 
   .mobile-nav-item.active {
-    color: var(--accent-primary);
+    color: var(--color-accent);
   }
 
   .mobile-nav-item.active svg {
-    stroke: var(--accent-primary);
+    stroke: var(--color-accent);
     transform: translateY(-1px);
   }
 
@@ -1990,7 +1990,7 @@
     width: 32px;
     height: 32px;
     border-radius: 8px;
-    background: linear-gradient(135deg, rgba(39, 245, 180, 0.2), rgba(13, 21, 20, 0.9));
+    background: linear-gradient(135deg, rgba(22, 119, 255, 0.25), rgba(8, 13, 24, 0.9));
     border: 1px solid var(--border-color);
     display: flex;
     align-items: center;
@@ -2008,7 +2008,7 @@
   .mobile-brand-sub {
     font-size: 9px;
     letter-spacing: 0.06em;
-    color: var(--accent-primary);
+    color: var(--color-accent);
     font-family: var(--font-mono);
   }
 
@@ -2086,18 +2086,18 @@
     width: 96px;
     height: 96px;
     border-radius: 50%;
-    border: 2px solid rgba(39, 245, 180, 0.3);
+    border: 2px solid rgba(0, 166, 255, 0.35);
     display: flex;
     align-items: center;
     justify-content: center;
-    background: radial-gradient(circle, rgba(39, 245, 180, 0.08) 0%, rgba(13, 21, 20, 0.8) 70%);
+    background: radial-gradient(circle, rgba(0, 166, 255, 0.12) 0%, rgba(8, 13, 24, 0.85) 70%);
   }
 
   .ring-pulse-aura {
     position: absolute;
     inset: -6px;
     border-radius: 50%;
-    border: 1px dashed rgba(39, 245, 180, 0.4);
+    border: 1px dashed rgba(0, 166, 255, 0.45);
     animation: spinSlow 20s linear infinite;
   }
 
@@ -2123,7 +2123,7 @@
     font-family: var(--font-mono);
     font-size: 11px;
     font-weight: 700;
-    color: var(--accent-primary);
+    color: var(--color-accent);
     letter-spacing: 0.08em;
   }
 
@@ -2164,8 +2164,8 @@
   }
 
   .mobile-summary-cell:active {
-    border-color: var(--accent-primary);
-    background: rgba(39, 245, 180, 0.08);
+    border-color: var(--color-accent);
+    background: rgba(0, 166, 255, 0.1);
   }
 
   .summary-cell-icon {
@@ -2177,7 +2177,7 @@
     font-family: var(--font-mono);
     font-size: 20px;
     font-weight: 800;
-    color: var(--accent-primary);
+    color: var(--color-accent);
     line-height: 1.2;
   }
 
@@ -2221,7 +2221,7 @@
     width: 26px;
     height: 26px;
     border-radius: 6px;
-    background: rgba(39, 245, 180, 0.1);
+    background: rgba(0, 166, 255, 0.12);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -2279,7 +2279,7 @@
   }
 
   .mobile-quick-btn svg {
-    color: var(--accent-primary);
+    color: var(--color-accent);
   }
 
   .mobile-quick-btn span {
@@ -2290,8 +2290,8 @@
   }
 
   .mobile-quick-btn:active {
-    border-color: var(--accent-primary);
-    background: rgba(39, 245, 180, 0.1);
+    border-color: var(--color-accent);
+    background: rgba(0, 166, 255, 0.1);
   }
 
   /* Mobile Evidence Filter Pills */
@@ -2323,9 +2323,9 @@
   }
 
   .mobile-filter-pill.active {
-    background: rgba(39, 245, 180, 0.16);
-    border-color: var(--accent-primary);
-    color: var(--accent-primary);
+    background: rgba(0, 166, 255, 0.16);
+    border-color: var(--color-accent);
+    color: var(--color-accent);
   }
 
   /* Mobile Evidence Cards List */
@@ -2350,8 +2350,8 @@
   }
 
   .mobile-evidence-card:active {
-    border-color: var(--accent-primary);
-    background: rgba(39, 245, 180, 0.05);
+    border-color: var(--color-accent);
+    background: rgba(0, 166, 255, 0.08);
     transform: scale(0.99);
   }
 
@@ -2374,14 +2374,14 @@
   .mobile-ev-card-hash {
     font-family: var(--font-mono);
     font-size: 9.5px;
-    color: var(--accent-primary);
-    background: rgba(39, 245, 180, 0.08);
+    color: var(--color-accent);
+    background: rgba(0, 166, 255, 0.1);
     padding: 3px 6px;
     border-radius: 4px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    border: 1px solid rgba(39, 245, 180, 0.2);
+    border: 1px solid rgba(0, 166, 255, 0.25);
   }
 
   .mobile-ev-card-meta {
@@ -2409,7 +2409,7 @@
   }
 
   .mobile-sheet-box {
-    background: #0E1614;
+    background: #0D1424;
     width: 100%;
     max-width: 520px;
     border-radius: 16px 16px 0 0;

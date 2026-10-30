@@ -5,7 +5,7 @@
  * - Leaflet CartoDB Dark Matter tile provider WITHOUT retina watermark.
  * - OpenStreetMap and CartoDB Positron layer control with automatic tile error fallback.
  * - Chronological directional polyline trails and pulsing device pins.
- * - Color Palette: Jet Black (#000000) × Muted Moss Green (#608D83) × Neon Emerald (#39FFB8).
+ * - Color Palette: Jet Black (#05080F) × Deep Navy (#080D18 / #0D1424) × Electric Blue (#00A6FF / #1677FF).
  * - Strict separation between Live SOC WebSocket and Frontend Demo Mode simulation.
  * - Bounded exponential backoff for WebSocket reconnection (anti-DoS).
  * - Accurate WebSocket connection states: CONNECTED, RECONNECTING, DISCONNECTED, ERROR.
@@ -15,6 +15,7 @@
 import { api, showToast, escapeHtml } from './api.js';
 import { getActiveCaseId } from './cases.js';
 import { isDemoMode } from './demo.js';
+import { isValidCoordinate, renderGoogleMapsButton, renderLocationObservationCard } from './maps.js';
 
 let telemetryEvents = [];
 let callLogs = [];
@@ -167,10 +168,15 @@ function updateTelemetryMetrics() {
 
   const latestEl = document.getElementById('metric-latest-telemetry');
   if (latestEl) {
-    if (telemetryEvents.length > 0 && telemetryEvents[0].latitude && telemetryEvents[0].longitude) {
+    if (telemetryEvents.length > 0 && isValidCoordinate(telemetryEvents[0].latitude, telemetryEvents[0].longitude)) {
       const lat = Number(telemetryEvents[0].latitude).toFixed(4);
       const lng = Number(telemetryEvents[0].longitude).toFixed(4);
-      latestEl.textContent = `${lat}, ${lng}`;
+      latestEl.innerHTML = `
+        <span style="display:inline-flex; align-items:center; gap:5px;">
+          <span>${lat}, ${lng}</span>
+          ${renderGoogleMapsButton(telemetryEvents[0].latitude, telemetryEvents[0].longitude, 'Maps ↗', 'btn-xs')}
+        </span>
+      `;
     } else {
       latestEl.textContent = 'Awaiting fix...';
     }
@@ -190,8 +196,13 @@ export function renderTelemetryFeed() {
     <tr>
       <td><span class="mono text-cyan">${escapeHtml(e.event_id || 'TLM-N/A')}</span></td>
       <td><span class="mono">${escapeHtml(e.device_id || 'N/A')}</span></td>
-      <td><span class="badge badge-emerald">${escapeHtml(e.event_type || 'LOCATION')}</span></td>
-      <td><span class="mono font-bold">${Number(e.latitude || 0).toFixed(6)}, ${Number(e.longitude || 0).toFixed(6)}</span></td>
+      <td><span class="badge badge-accent">${escapeHtml(e.event_type || 'LOCATION')}</span></td>
+      <td>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span class="mono font-bold">${Number(e.latitude || 0).toFixed(6)}, ${Number(e.longitude || 0).toFixed(6)}</span>
+          ${renderGoogleMapsButton(e.latitude, e.longitude, 'View in Google Maps ↗', 'btn-xs')}
+        </div>
+      </td>
       <td>±${e.accuracy ? Number(e.accuracy).toFixed(1) : 0}m</td>
       <td><span class="hash-pill" title="${escapeHtml(e.evidence_hash || '')}">${escapeHtml((e.evidence_hash || '').slice(0, 16))}...</span></td>
       <td><small class="text-muted">${e.received_at ? new Date(e.received_at).toLocaleTimeString() : 'N/A'}</small></td>
@@ -316,7 +327,10 @@ export function updateOverviewDeviceSummary() {
     </div>
     <div class="device-summary-item">
       <span class="device-summary-label">Last Coordinates</span>
-      <span class="device-summary-val mono">${Number(latest.latitude || 0).toFixed(5)}, ${Number(latest.longitude || 0).toFixed(5)}</span>
+      <span class="device-summary-val mono" style="display: flex; align-items: center; gap: 6px;">
+        <span>${Number(latest.latitude || 0).toFixed(5)}, ${Number(latest.longitude || 0).toFixed(5)}</span>
+        ${renderGoogleMapsButton(latest.latitude, latest.longitude, 'Maps ↗', 'btn-xs')}
+      </span>
     </div>
     <div class="device-summary-item">
       <span class="device-summary-label">Movement State</span>
@@ -380,7 +394,7 @@ export function initLeafletMap(containerId = 'live-map-canvas') {
       {
         maxZoom: 21,
         subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
-        attribution: '&copy; <a href="https://maps.google.com" target="_blank" style="color: #608D83;">Google Maps</a>'
+        attribution: '&copy; <a href="https://maps.google.com" target="_blank" style="color: #60A5FA;">Google Maps</a>'
       }
     );
 
@@ -389,7 +403,7 @@ export function initLeafletMap(containerId = 'live-map-canvas') {
       {
         maxZoom: 21,
         subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
-        attribution: '&copy; <a href="https://maps.google.com" target="_blank" style="color: #608D83;">Google Maps</a>'
+        attribution: '&copy; <a href="https://maps.google.com" target="_blank" style="color: #60A5FA;">Google Maps</a>'
       }
     );
 
@@ -398,7 +412,7 @@ export function initLeafletMap(containerId = 'live-map-canvas') {
       {
         maxZoom: 21,
         subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
-        attribution: '&copy; <a href="https://maps.google.com" target="_blank" style="color: #608D83;">Google Maps</a>'
+        attribution: '&copy; <a href="https://maps.google.com" target="_blank" style="color: #60A5FA;">Google Maps</a>'
       }
     );
 
@@ -407,7 +421,7 @@ export function initLeafletMap(containerId = 'live-map-canvas') {
       {
         maxZoom: 21,
         subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
-        attribution: '&copy; <a href="https://maps.google.com" target="_blank" style="color: #608D83;">Google Maps</a>'
+        attribution: '&copy; <a href="https://maps.google.com" target="_blank" style="color: #60A5FA;">Google Maps</a>'
       }
     );
 
@@ -455,7 +469,7 @@ export function initLeafletMap(containerId = 'live-map-canvas') {
 
     // Map attribution
     window.L.control.attribution({ position: 'bottomright' })
-      .addAttribution('&copy; <a href="https://maps.google.com" target="_blank" style="color: #608D83;">Google Maps</a> &copy; <a href="https://carto.com" target="_blank" style="color: #608D83;">CARTO</a>')
+      .addAttribution('&copy; <a href="https://maps.google.com" target="_blank" style="color: #60A5FA;">Google Maps</a> &copy; <a href="https://carto.com" target="_blank" style="color: #60A5FA;">CARTO</a>')
       .addTo(leafletMap);
 
     setTimeout(() => {
@@ -492,10 +506,10 @@ export function updateMapData(customEvents = null) {
 
     deviceTracks[devId] = latLngs;
 
-    // 1. Draw Directional Movement Polyline Trail in Electric Aquamarine
+    // 1. Draw Directional Movement Polyline Trail in Electric Blue
     if (!devicePolylines[devId]) {
       devicePolylines[devId] = window.L.polyline(latLngs, {
-        color: '#42E8C4',
+        color: '#00A6FF',
         weight: 2.5,
         opacity: 0.85,
         smoothFactor: 1
@@ -510,11 +524,11 @@ export function updateMapData(customEvents = null) {
     deviceTracks[devId + '_markers'] = [];
 
     devEvents.forEach((ev, idx) => {
-      const fixTime = ev.timestamp ? new Date(ev.timestamp).toLocaleTimeString() : `#${idx+1}`;
+      const fixTime = ev.timestamp ? new Date(ev.timestamp).toLocaleString() : `#${idx+1}`;
       const circle = window.L.circleMarker([ev.latitude, ev.longitude], {
-        radius: 3.5,
-        fillColor: '#121A23',
-        color: '#42E8C4',
+        radius: 4,
+        fillColor: '#0D1424',
+        color: '#00A6FF',
         weight: 1.5,
         fillOpacity: 0.95
       }).bindTooltip(`Fix #${idx+1} [${fixTime}] ±${(ev.accuracy || 4.2).toFixed(1)}m`, {
@@ -522,14 +536,32 @@ export function updateMapData(customEvents = null) {
         className: 'mono'
       }).addTo(leafletMap);
 
+      // Interactive popup with Google Maps action for each recorded observation
+      const fixPopup = `
+        <div style="font-family: var(--font-sans); color: #F1F5F9; padding: 6px; min-width: 185px;">
+          <div style="font-size: 11px; font-weight: 700; color: #00A6FF;">GPS FIX #${idx + 1} — ${escapeHtml(devId)}</div>
+          <div style="font-size: 10px; color: #94A3B8; margin-top: 2px;">Recorded: ${escapeHtml(fixTime)}</div>
+          <div style="margin-top: 6px; font-family: var(--font-mono); font-size: 11px; font-weight: 700;">
+            ${Number(ev.latitude).toFixed(6)}, ${Number(ev.longitude).toFixed(6)}
+          </div>
+          <div style="font-size: 10px; color: #60A5FA; margin-top: 2px;">
+            Accuracy: ±${(ev.accuracy || 4.2).toFixed(1)}m
+          </div>
+          <div style="margin-top: 8px;">
+            ${renderGoogleMapsButton(ev.latitude, ev.longitude, 'View in Google Maps ↗', 'btn-xs')}
+          </div>
+        </div>
+      `;
+      circle.bindPopup(fixPopup);
+
       deviceTracks[devId + '_markers'].push(circle);
     });
 
     // 2. Custom Pulsing Device Marker
     const markerHtml = `
       <div class="tracex-marker-pin">
-        <div class="pulse-ring" style="border-color: #42E8C4;"></div>
-        <div class="core-dot" style="background: #42E8C4;"></div>
+        <div class="pulse-ring" style="border-color: #00A6FF;"></div>
+        <div class="core-dot" style="background: #00A6FF;"></div>
       </div>
     `;
     const icon = window.L.divIcon({
@@ -540,14 +572,18 @@ export function updateMapData(customEvents = null) {
     });
 
     const popupContent = `
-      <div style="font-family: var(--font-sans); color: #E8EEF5; padding: 4px; min-width: 170px;">
-        <div style="font-size: 13px; font-weight: 700; color: #42E8C4;">${escapeHtml(devId)}</div>
-        <div style="font-size: 11px; color: #9AAABD; margin-top: 2px;">Case: ${escapeHtml(latestEvent.case_id || 'N/A')}</div>
-        <div style="margin-top: 6px; font-family: var(--font-mono); font-size: 11px;">
+      <div style="font-family: var(--font-sans); color: #F1F5F9; padding: 6px; min-width: 195px;">
+        <div style="font-size: 13px; font-weight: 700; color: #00A6FF;">${escapeHtml(devId)}</div>
+        <div style="font-size: 10.5px; color: #94A3B8; margin-top: 2px;">Case: ${escapeHtml(latestEvent.case_id || 'N/A')}</div>
+        <div style="font-size: 10px; color: #94A3B8; margin-top: 1px;">Recorded: ${latestEvent.timestamp ? new Date(latestEvent.timestamp).toLocaleString() : 'N/A'}</div>
+        <div style="margin-top: 6px; font-family: var(--font-mono); font-size: 11.5px; font-weight: 700;">
           ${Number(latestEvent.latitude || 0).toFixed(6)}, ${Number(latestEvent.longitude || 0).toFixed(6)}
         </div>
-        <div style="margin-top: 4px; font-size: 11px; color: #42E8C4;">
+        <div style="margin-top: 4px; font-size: 10.5px; color: #60A5FA;">
           Speed: ${((latestEvent.speed || 0) * 3.6).toFixed(1)} km/h • ±${(latestEvent.accuracy || 0).toFixed(1)}m
+        </div>
+        <div style="margin-top: 10px; display: flex; gap: 6px;">
+          ${renderGoogleMapsButton(latestEvent.latitude, latestEvent.longitude, 'View in Google Maps ↗', 'btn-xs')}
         </div>
       </div>
     `;
@@ -582,11 +618,17 @@ export function scrubMapTimeline(ratio) {
   const total = telemetryEvents.length;
   const index = Math.max(0, Math.min(total - 1, Math.round(ratio * (total - 1))));
   const targetEvent = telemetryEvents[index];
-  if (targetEvent && targetEvent.latitude && targetEvent.longitude) {
+  if (targetEvent && isValidCoordinate(targetEvent.latitude, targetEvent.longitude)) {
     leafletMap.panTo([targetEvent.latitude, targetEvent.longitude], { animate: true });
     const timeLabel = document.getElementById('map-scrubber-time');
     if (timeLabel) {
-      timeLabel.textContent = targetEvent.timestamp ? new Date(targetEvent.timestamp).toLocaleTimeString() : `Fix #${index + 1}`;
+      const timeStr = targetEvent.timestamp ? new Date(targetEvent.timestamp).toLocaleTimeString() : `Fix #${index + 1}`;
+      timeLabel.innerHTML = `
+        <span style="display:inline-flex; align-items:center; gap:6px;">
+          <span>${timeStr} (${Number(targetEvent.latitude).toFixed(4)}, ${Number(targetEvent.longitude).toFixed(4)})</span>
+          ${renderGoogleMapsButton(targetEvent.latitude, targetEvent.longitude, 'Maps ↗', 'btn-xs')}
+        </span>
+      `;
     }
   }
 }

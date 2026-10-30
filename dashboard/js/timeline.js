@@ -9,6 +9,7 @@
  */
 
 import { escapeHtml } from './api.js';
+import { isValidCoordinate, renderGoogleMapsButton } from './maps.js';
 
 let timelineContainer = null;
 let activeFilter = 'all';
@@ -79,10 +80,12 @@ export function renderTimelineEvents() {
       id: t.event_id || `gps-${t.timestamp}`,
       timestamp: t.timestamp || t.received_at,
       deviceId: t.device_id,
-      title: `GPS Location Fix (${t.latitude ? t.latitude.toFixed(4) : '0.0000'}, ${t.longitude ? t.longitude.toFixed(4) : '0.0000'})`,
+      latitude: t.latitude,
+      longitude: t.longitude,
+      title: `GPS Location Fix (${t.latitude ? Number(t.latitude).toFixed(4) : '0.0000'}, ${t.longitude ? Number(t.longitude).toFixed(4) : '0.0000'})`,
       meta: `Accuracy: ±${t.accuracy_meters || t.accuracy || 4.2}m | Speed: ${t.speed_kmh || 0} km/h`,
       badge: 'GPS OBSERVATION',
-      color: '#42E8C4'
+      color: '#00A6FF'
     });
   });
 
@@ -183,6 +186,11 @@ export function renderTimelineEvents() {
           </div>
           <div class="tl-card-title">${escapeHtml(ev.title)}</div>
           <div class="tl-card-meta">${escapeHtml(ev.meta)}</div>
+          ${ev.type === 'gps' && isValidCoordinate(ev.latitude, ev.longitude) ? `
+            <div style="margin-top: 8px;">
+              ${renderGoogleMapsButton(ev.latitude, ev.longitude, 'View in Google Maps ↗', 'btn-xs')}
+            </div>
+          ` : ''}
         </div>
       </div>
     `;

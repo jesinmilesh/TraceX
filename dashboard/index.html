@@ -387,7 +387,10 @@
                 <div><span class="text-muted">CASE ID:</span> <span id="mobile-case-id" class="text-accent">TX-2026-089</span></div>
                 <div><span class="text-muted">WARRANT:</span> <span class="text-secondary-accent">ORD-2026-TX-8819</span></div>
                 <div><span class="text-muted">DEVICE:</span> <span id="mobile-device-id" class="text-primary">Pixel 8 Pro (DEV-ANDROID-01)</span></div>
-                <div><span class="text-muted">UPLINK:</span> <span class="text-accent">ONLINE (±4.2m GPS Fix)</span></div>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span><span class="text-muted">UPLINK:</span> <span class="text-accent">ONLINE (±4.2m GPS Fix)</span></span>
+                  <span id="mobile-case-gmaps-link"></span>
+                </div>
               </div>
             </div>
 
@@ -939,6 +942,7 @@
             <div id="dev-overview-lastseen" style="font-size: 12px; margin-top: 2px;">-</div>
           </div>
         </div>
+        <div id="dev-overview-location-container" style="margin-top: 14px;"></div>
       </div>
 
       <!-- Tab 2: Location History -->

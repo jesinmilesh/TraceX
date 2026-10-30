@@ -1,6 +1,7 @@
 import { api, showToast, escapeHtml } from './api.js';
 import { getActiveCaseId } from './cases.js';
 import { selectDeviceOnMap } from './telemetry.js';
+import { isValidCoordinate, renderGoogleMapsButton, renderLocationObservationCard } from './maps.js';
 
 let devicesList = [];
 let activeDetailDevice = null;
@@ -191,6 +192,27 @@ export async function openDeviceDetails(deviceId) {
   document.getElementById('dev-overview-registered').textContent = dev.registered_at ? new Date(dev.registered_at).toLocaleString() : 'N/A';
   document.getElementById('dev-overview-lastseen').textContent = dev.last_seen ? new Date(dev.last_seen).toLocaleString() : 'N/A';
 
+  // Last-known recorded GPS location observation card
+  const locContainer = document.getElementById('dev-overview-location-container');
+  const lat = dev.latitude || (dev.location ? dev.location.latitude : null);
+  const lon = dev.longitude || (dev.location ? dev.location.longitude : null);
+  if (locContainer) {
+    if (isValidCoordinate(lat, lon)) {
+      locContainer.innerHTML = renderLocationObservationCard({
+        latitude: lat,
+        longitude: lon,
+        timestamp: dev.last_seen,
+        deviceId: dev.device_id,
+        accuracy: dev.accuracy || 3.8,
+        title: 'LAST RECORDED GPS OBSERVATION'
+      });
+      locContainer.style.display = 'block';
+    } else {
+      locContainer.innerHTML = '';
+      locContainer.style.display = 'none';
+    }
+  }
+
   // Load Device Telemetry, Call Logs, Messages
   loadDeviceSubData(dev.device_id, dev.case_id);
 
@@ -216,7 +238,12 @@ async function loadDeviceSubData(deviceId, caseId) {
           return `
             <tr>
               <td><small class="mono">${escapeHtml(time)}</small></td>
-              <td><span class="mono font-bold">${lat}, ${lng}</span></td>
+              <td>
+                <div style="display: flex; align-items: center; gap: 6px;">
+                  <span class="mono font-bold">${lat}, ${lng}</span>
+                  ${renderGoogleMapsButton(h.latitude, h.longitude, 'Maps ↗', 'btn-xs')}
+                </div>
+              </td>
               <td>±${acc}m</td>
               <td>${speed} km/h</td>
               <td><small class="mono text-muted">${hash}...</small></td>

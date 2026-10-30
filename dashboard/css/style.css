@@ -1,45 +1,46 @@
 /* ==============================================================================
    Project TraceX — Enterprise Mobile & SOC Web Interface
-   Design System Tokens (Deep Charcoal & Dark Navy-Teal)
-   Background: #070B0D | Sidebar: #0D1514 | Panel: #111C19 | Elevated: #172521
-   Primary Accent: #27F5B4 | Secondary: #8CA6B5 | Text: #F0F5F3 / #9DAEAA
-   Borders: #263B35 | Warning: #F4B942 | Error: #EF4444
+   Design System Tokens (Blue-and-Black Cybersecurity Theme)
+   Background: #05080F | Sidebar: #080D18 | Panel: #0D1424 | Elevated: #111C30
+   Primary Blue: #1677FF | Electric Blue Accent: #00A6FF | Soft Blue: #60A5FA
+   Text: #F1F5F9 / #94A3B8 | Borders: #24334B | Success: #22C55E | Warning: #F59E0B | Error: #EF4444
    ============================================================================== */
 
 :root {
-  /* Official TraceX Mandatory Palette */
-  --bg-main: #070B0D;
-  --bg-sidebar: #0D1514;
-  --bg-panel: #111C19;
-  --bg-panel-secondary: #172521;
-  --bg-panel-hover: #1D302B;
-  --bg-input: #0A110F;
-  --bg-elevated: #172521;
+  /* Official TraceX Blue-and-Black Cybersecurity Palette */
+  --bg-main: #05080F;
+  --bg-sidebar: #080D18;
+  --bg-panel: #0D1424;
+  --bg-panel-secondary: #111C30;
+  --bg-panel-hover: #16243A;
+  --bg-input: #080D18;
+  --bg-elevated: #111C30;
 
   /* Restrained Structural Borders */
-  --border-color: #263B35;
-  --border-subtle: #192723;
-  --border-focus: #27F5B4;
-  --border-secondary: #8CA6B5;
+  --border-color: #24334B;
+  --border-subtle: #16243A;
+  --border-focus: #00A6FF;
+  --border-secondary: #60A5FA;
 
   /* Typography Scale & Colors */
-  --text-primary: #F0F5F3;
-  --text-secondary: #9DAEAA;
-  --text-muted: #647571;
-  --text-dim: #455450;
+  --text-primary: #F1F5F9;
+  --text-secondary: #94A3B8;
+  --text-muted: #64748B;
+  --text-dim: #475569;
 
   /* Accent Identifiers */
-  --color-accent: #27F5B4;       /* Primary Electric Mint/Teal */
-  --color-secondary: #8CA6B5;    /* Slate Blue Supporting Accent */
-  --color-cyan: #27F5B4;         /* Backwards-compatibility alias */
-  --color-emerald: #27F5B4;      /* Backwards-compatibility alias */
-  --color-moss: #8CA6B5;         /* Backwards-compatibility alias */
-  --color-blue: #8CA6B5;
-  --color-warning: #F4B942;
-  --color-amber: #F4B942;
+  --color-primary-blue: #1677FF;  /* Primary Enterprise Blue */
+  --color-accent: #00A6FF;        /* Electric Blue Accent */
+  --color-secondary: #60A5FA;     /* Soft Blue Highlight */
+  --color-cyan: #00A6FF;          /* Backwards-compatibility alias */
+  --color-emerald: #1677FF;       /* Backwards-compatibility alias (swapped to blue) */
+  --color-moss: #60A5FA;          /* Backwards-compatibility alias */
+  --color-blue: #1677FF;
+  --color-warning: #F59E0B;
+  --color-amber: #F59E0B;
   --color-error: #EF4444;
   --color-rose: #EF4444;
-  --color-success: #27F5B4;
+  --color-success: #22C55E;
 
   /* Typography */
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -58,8 +59,8 @@
 
   /* Restrained Shadows */
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.45);
-  --shadow-md: 0 4px 8px -1px rgba(0, 0, 0, 0.55);
-  --shadow-panel: 0 2px 5px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.55);
+  --shadow-panel: 0 4px 14px rgba(5, 8, 15, 0.6);
 
   --transition-fast: 160ms ease;
   --transition-normal: 220ms ease;
@@ -141,28 +142,34 @@ body {
   white-space: nowrap;
 }
 
-.badge-cyan, .badge-emerald, .badge-accent {
-  background: rgba(39, 245, 180, 0.1);
+.badge-cyan, .badge-accent, .badge-blue {
+  background: rgba(0, 166, 255, 0.12);
   color: var(--color-accent);
-  border-color: rgba(39, 245, 180, 0.3);
+  border-color: rgba(0, 166, 255, 0.35);
 }
 
-.badge-secondary, .badge-blue {
-  background: rgba(140, 166, 181, 0.1);
+.badge-emerald, .badge-success {
+  background: rgba(34, 197, 94, 0.12);
+  color: var(--color-success);
+  border-color: rgba(34, 197, 94, 0.35);
+}
+
+.badge-secondary {
+  background: rgba(96, 165, 250, 0.12);
   color: var(--color-secondary);
-  border-color: rgba(140, 166, 181, 0.3);
+  border-color: rgba(96, 165, 250, 0.35);
 }
 
 .badge-amber, .badge-warning {
-  background: rgba(244, 185, 66, 0.1);
+  background: rgba(245, 158, 11, 0.12);
   color: var(--color-warning);
-  border-color: rgba(244, 185, 66, 0.3);
+  border-color: rgba(245, 158, 11, 0.35);
 }
 
 .badge-rose, .badge-error {
-  background: rgba(239, 68, 68, 0.1);
+  background: rgba(239, 68, 68, 0.12);
   color: var(--color-error);
-  border-color: rgba(239, 68, 68, 0.3);
+  border-color: rgba(239, 68, 68, 0.35);
 }
 
 .badge-neutral {
@@ -233,20 +240,22 @@ body {
   cursor: not-allowed;
 }
 
-/* Primary Action Button: Electric Mint with Dark Contrast */
+/* Primary Action Button: Enterprise Blue with Clean Contrast */
 .btn-primary {
-  background: var(--color-accent);
-  color: #05100C;
-  border-color: var(--color-accent);
+  background: var(--color-primary-blue);
+  color: #FFFFFF;
+  border-color: var(--color-primary-blue);
   font-weight: 700;
+  box-shadow: 0 2px 6px rgba(22, 119, 255, 0.3);
 }
 .btn-primary:hover:not(:disabled) {
-  background: #1EE0A2;
-  border-color: #1EE0A2;
-  color: #000000;
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: #05080F;
+  box-shadow: 0 4px 12px rgba(0, 166, 255, 0.4);
 }
 
-/* Secondary Button: Elevated Navy-Teal */
+/* Secondary Button: Elevated Navy Card */
 .btn-secondary {
   background: var(--bg-panel-secondary);
   color: var(--text-primary);
@@ -254,16 +263,17 @@ body {
 }
 .btn-secondary:hover:not(:disabled) {
   background: var(--bg-panel-hover);
-  border-color: var(--text-muted);
+  border-color: var(--color-accent);
+  color: var(--color-accent);
 }
 
 .btn-cyan, .btn-emerald, .btn-accent {
-  background: rgba(39, 245, 180, 0.1);
+  background: rgba(0, 166, 255, 0.12);
   color: var(--color-accent);
-  border-color: rgba(39, 245, 180, 0.35);
+  border-color: rgba(0, 166, 255, 0.35);
 }
 .btn-cyan:hover:not(:disabled), .btn-emerald:hover:not(:disabled), .btn-accent:hover:not(:disabled) {
-  background: rgba(39, 245, 180, 0.2);
+  background: rgba(0, 166, 255, 0.22);
   border-color: var(--color-accent);
 }
 
@@ -357,4 +367,86 @@ body {
 
 .toast-warning {
   border-left: 3px solid var(--color-warning);
+}
+
+/* ==============================================================================
+   GOOGLE MAPS INTEGRATION & COORDINATE CARDS
+   ============================================================================== */
+
+.gmaps-action-btn {
+  background: rgba(22, 119, 255, 0.15) !important;
+  border-color: rgba(0, 166, 255, 0.4) !important;
+  color: #00A6FF !important;
+  font-weight: 600;
+  transition: all 0.16s ease;
+  text-decoration: none;
+}
+
+.gmaps-action-btn:hover {
+  background: #1677FF !important;
+  border-color: #00A6FF !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 2px 10px rgba(0, 166, 255, 0.35);
+  transform: translateY(-1px);
+}
+
+.gmaps-btn-disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.btn-xs {
+  padding: 2px 6px;
+  font-size: 10px;
+  line-height: 1.2;
+  border-radius: 3px;
+}
+
+.location-observation-card {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  box-shadow: var(--shadow-sm);
+}
+
+.loc-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.loc-card-tag {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--color-secondary);
+  text-transform: uppercase;
+}
+
+.loc-coords-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 11.5px;
+  background: var(--bg-input);
+  padding: 7px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
+  margin-bottom: 6px;
+}
+
+.loc-meta-row {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+.loc-card-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+  align-items: center;
 }

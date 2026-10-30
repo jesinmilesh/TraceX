@@ -13,6 +13,7 @@
 import { api, showToast, escapeHtml } from './api.js';
 import { getActiveCaseId } from './cases.js';
 import { selectGraphNode } from './graph.js';
+import { isValidCoordinate, renderGoogleMapsButton, renderLocationObservationCard } from './maps.js';
 
 let activeArtifactId = null;
 let activeWorkspaceTab = 'meta'; // 'meta' | 'hex' | 'verify' | 'custody'
@@ -323,6 +324,18 @@ function renderMetadataTab(viewport, ev) {
           <span class="wb-meta-v mono text-muted">${uploadTime}</span>
         </div>
       </div>
+
+      ${(isValidCoordinate(ev.latitude, ev.longitude) || (ev.metadata && isValidCoordinate(ev.metadata.latitude, ev.metadata.longitude))) ? `
+        <div style="margin-top: 14px;">
+          ${renderLocationObservationCard({
+            latitude: ev.latitude || ev.metadata.latitude,
+            longitude: ev.longitude || ev.metadata.longitude,
+            timestamp: ev.uploaded_at,
+            deviceId: ev.device_id,
+            title: 'SEIZURE / EXTRACTION GPS FIX'
+          })}
+        </div>
+      ` : ''}
 
       <div class="wb-meta-hash-section">
         <div class="wb-meta-k">CRYPTOGRAPHIC SHA-256 CHECK-HASH</div>

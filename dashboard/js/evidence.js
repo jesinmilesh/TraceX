@@ -1,5 +1,6 @@
 import { api, showToast, escapeHtml } from './api.js';
 import { getActiveCaseId } from './cases.js';
+import { isValidCoordinate, renderGoogleMapsButton, renderLocationObservationCard } from './maps.js';
 
 let evidenceList = [];
 let activeMobileFilter = 'all';
@@ -229,6 +230,18 @@ function openMobileEvidenceDetail(evidenceId) {
           <div class="mono text-muted" style="font-size: 10.5px;">${escapeHtml(timeStr)}</div>
         </div>
       </div>
+
+      ${(isValidCoordinate(ev.latitude, ev.longitude) || (ev.metadata && isValidCoordinate(ev.metadata.latitude, ev.metadata.longitude))) ? `
+        <div style="margin-top: 10px;">
+          ${renderLocationObservationCard({
+            latitude: ev.latitude || ev.metadata.latitude,
+            longitude: ev.longitude || ev.metadata.longitude,
+            timestamp: ev.uploaded_at,
+            deviceId: ev.device_id,
+            title: 'SEIZURE / EXTRACTION GPS LOCATION'
+          })}
+        </div>
+      ` : ''}
 
       <div class="mobile-sheet-actions" style="margin-top: 16px; display: flex; flex-direction: column; gap: 8px;">
         <button class="btn btn-primary" id="mobile-sheet-btn-verify" style="width: 100%;">
