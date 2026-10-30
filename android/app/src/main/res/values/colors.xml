@@ -1,12 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="bg_dark">#07090E</color>
-    <color name="bg_surface">#131B2E</color>
-    <color name="primary_cyan">#06B6D4</color>
-    <color name="primary_blue">#0284C7</color>
+    <!-- TraceX Mandatory Brand Palette: Jet Black × Muted Moss Green × Neon Emerald -->
+    <color name="bg_dark">#000000</color>
+    <color name="bg_surface">#101713</color>
+    <color name="bg_surface_secondary">#17221D</color>
+    
+    <!-- Exact Primary Triad -->
+    <color name="primary_jet_black">#000000</color>
+    <color name="primary_moss_green">#608D83</color>
+    <color name="primary_neon_emerald">#39FFB8</color>
+    
+    <!-- Legacy Bindings (kept for XML backwards compatibility with exact new palette) -->
+    <color name="primary_cyan">#39FFB8</color>
+    <color name="primary_blue">#39FFB8</color>
+    
+    <!-- System & Supporting Status Indicators -->
     <color name="status_green">#10B981</color>
-    <color name="status_red">#F43F5E</color>
-    <color name="text_white">#F8FAFC</color>
-    <color name="text_muted">#94A3B8</color>
-    <color name="border_subtle">#1E293B</color>
+    <color name="status_amber">#F59E0B</color>
+    <color name="status_red">#EF4444</color>
+    <color name="status_info">#3B82F6</color>
+    
+    <!-- Typography & Borders -->
+    <color name="text_white">#F1F5F9</color>
+    <color name="text_muted">#A7B3AE</color>
+    <color name="text_dim">#6C7A74</color>
+    <color name="border_subtle">#28352F</color>
+    <color name="border_subtle_dark">#19241F</color>
 </resources>

@@ -1,9 +1,26 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <style name="Theme.TraceX" parent="Theme.MaterialComponents.DayNight.NoActionBar">
-        <item name="colorPrimary">@color/primary_blue</item>
-        <item name="colorPrimaryVariant">@color/primary_cyan</item>
-        <item name="colorOnPrimary">@color/text_white</item>
-        <item name="android:windowBackground">@color/bg_dark</item>
-        <item name="android:statusBarColor">@color/bg_dark</item>
+        <!-- Brand Colors -->
+        <item name="colorPrimary">@color/primary_neon_emerald</item>
+        <item name="colorPrimaryVariant">@color/primary_moss_green</item>
+        <item name="colorOnPrimary">#000000</item>
+        <item name="colorSecondary">@color/primary_moss_green</item>
+        <item name="colorOnSecondary">@color/text_white</item>
+        
+        <!-- Window & System Surfaces -->
+        <item name="android:windowBackground">@color/primary_jet_black</item>
+        <item name="android:statusBarColor">@color/primary_jet_black</item>
+        <item name="android:navigationBarColor">@color/primary_jet_black</item>
+        
+        <!-- Component Styles -->
+        <item name="materialCardViewStyle">@style/Widget.TraceX.CardView</item>
+    </style>
+
+    <style name="Widget.TraceX.CardView" parent="Widget.MaterialComponents.CardView">
+        <item name="cardBackgroundColor">@color/bg_surface</item>
+        <item name="strokeColor">@color/border_subtle</item>
+        <item name="strokeWidth">1dp</item>
+        <item name="cardCornerRadius">10dp</item>
+        <item name="cardElevation">0dp</item>
     </style>
 </resources>

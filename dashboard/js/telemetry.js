@@ -5,11 +5,11 @@
  * - Leaflet CartoDB Dark Matter tile provider WITHOUT retina watermark.
  * - OpenStreetMap and CartoDB Positron layer control with automatic tile error fallback.
  * - Chronological directional polyline trails and pulsing device pins.
+ * - Color Palette: Jet Black (#000000) × Muted Moss Green (#608D83) × Neon Emerald (#39FFB8).
  * - Strict separation between Live SOC WebSocket and Frontend Demo Mode simulation.
  * - Bounded exponential backoff for WebSocket reconnection (anti-DoS).
  * - Accurate WebSocket connection states: CONNECTED, RECONNECTING, DISCONNECTED, ERROR.
- * - Protection of sensitive data (no sensitive content logged to browser console).
- * - Complete XSS escaping on all DOM injections.
+ * - Complete XSS escaping on all dynamic DOM injections.
  */
 
 import { api, showToast, escapeHtml } from './api.js';
@@ -104,7 +104,7 @@ export function renderCallLogs() {
     <tr>
       <td><span class="mono font-bold text-cyan">${escapeHtml(c.phone_number || 'Unknown')}</span></td>
       <td>
-        <span class="badge ${c.call_type === 'INCOMING' ? 'badge-emerald' : c.call_type === 'OUTGOING' ? 'badge-cyan' : 'badge-rose'}">
+        <span class="badge ${c.call_type === 'INCOMING' ? 'badge-emerald' : c.call_type === 'OUTGOING' ? 'badge-moss' : 'badge-rose'}">
           ${escapeHtml(c.call_type || 'CALL')}
         </span>
       </td>
@@ -130,7 +130,7 @@ export function renderMessages() {
     <tr>
       <td><span class="mono font-bold text-cyan">${escapeHtml(m.sender || 'Unknown')}</span></td>
       <td>
-        <span class="badge ${m.msg_type === 'INCOMING' ? 'badge-emerald' : 'badge-cyan'}">
+        <span class="badge ${m.msg_type === 'INCOMING' ? 'badge-emerald' : 'badge-moss'}">
           ${escapeHtml(m.msg_type || 'SMS')}
         </span>
       </td>
@@ -170,7 +170,7 @@ export function renderTelemetryFeed() {
     <tr>
       <td><span class="mono text-cyan">${escapeHtml(e.event_id || 'TLM-N/A')}</span></td>
       <td><span class="mono">${escapeHtml(e.device_id || 'N/A')}</span></td>
-      <td><span class="badge badge-cyan">${escapeHtml(e.event_type || 'LOCATION')}</span></td>
+      <td><span class="badge badge-emerald">${escapeHtml(e.event_type || 'LOCATION')}</span></td>
       <td><span class="mono font-bold">${Number(e.latitude || 0).toFixed(6)}, ${Number(e.longitude || 0).toFixed(6)}</span></td>
       <td>±${e.accuracy ? Number(e.accuracy).toFixed(1) : 0}m</td>
       <td><span class="hash-pill" title="${escapeHtml(e.evidence_hash || '')}">${escapeHtml((e.evidence_hash || '').slice(0, 16))}...</span></td>
@@ -194,7 +194,7 @@ export function renderOverviewRecentEvents() {
       detail: `${Number(t.latitude || 0).toFixed(5)}, ${Number(t.longitude || 0).toFixed(5)} (±${Number(t.accuracy || 0).toFixed(1)}m)`,
       device_id: t.device_id || 'N/A',
       timestamp: t.received_at ? new Date(t.received_at).getTime() : (t.timestamp || 0),
-      badgeClass: 'badge-cyan',
+      badgeClass: 'badge-emerald',
       severity: 'NORMAL'
     });
   });
@@ -206,7 +206,7 @@ export function renderOverviewRecentEvents() {
       detail: `${c.phone_number || 'Unknown'} (${formatDuration(c.duration_seconds || 0)})`,
       device_id: c.device_id || 'N/A',
       timestamp: c.date ? new Date(c.date).getTime() : Date.now(),
-      badgeClass: c.call_type === 'INCOMING' ? 'badge-emerald' : 'badge-cyan',
+      badgeClass: c.call_type === 'INCOMING' ? 'badge-emerald' : 'badge-moss',
       severity: c.call_type === 'MISSED' ? 'WARN' : 'INFO'
     });
   });
@@ -383,7 +383,7 @@ export function initLeafletMap(containerId = 'live-map-canvas') {
 
     // Layer Controls
     const baseLayers = {
-      'Forensic Dark (CartoDB)': cartoDark,
+      'Forensic Jet Dark (CartoDB)': cartoDark,
       'OpenStreetMap Standard': osmStandard,
       'Positron Light (CartoDB)': cartoLight
     };
@@ -391,7 +391,7 @@ export function initLeafletMap(containerId = 'live-map-canvas') {
 
     // Map attribution
     window.L.control.attribution({ position: 'bottomright' })
-      .addAttribution('&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" style="color: #94a3b8;">OSM</a> &copy; <a href="https://carto.com" target="_blank" style="color: #94a3b8;">CARTO</a>')
+      .addAttribution('&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" style="color: #608D83;">OSM</a> &copy; <a href="https://carto.com" target="_blank" style="color: #608D83;">CARTO</a>')
       .addTo(leafletMap);
 
     setTimeout(() => {
@@ -428,10 +428,10 @@ export function updateMapData(customEvents = null) {
 
     deviceTracks[devId] = latLngs;
 
-    // 1. Draw Directional Movement Polyline Trail
+    // 1. Draw Directional Movement Polyline Trail in Neon Emerald
     if (!devicePolylines[devId]) {
       devicePolylines[devId] = window.L.polyline(latLngs, {
-        color: '#00C7E8',
+        color: '#39FFB8',
         weight: 3,
         opacity: 0.9,
         smoothFactor: 1
@@ -456,12 +456,12 @@ export function updateMapData(customEvents = null) {
 
     const popupContent = `
       <div style="font-family: var(--font-sans); color: #f1f5f9; padding: 4px; min-width: 170px;">
-        <div style="font-size: 13px; font-weight: 700; color: #00C7E8;">${escapeHtml(devId)}</div>
-        <div style="font-size: 11px; color: #9aaac0; margin-top: 2px;">Case: ${escapeHtml(latestEvent.case_id || 'N/A')}</div>
+        <div style="font-size: 13px; font-weight: 700; color: #39FFB8;">${escapeHtml(devId)}</div>
+        <div style="font-size: 11px; color: #A7B3AE; margin-top: 2px;">Case: ${escapeHtml(latestEvent.case_id || 'N/A')}</div>
         <div style="margin-top: 6px; font-family: var(--font-mono); font-size: 11px;">
           ${Number(latestEvent.latitude || 0).toFixed(6)}, ${Number(latestEvent.longitude || 0).toFixed(6)}
         </div>
-        <div style="margin-top: 4px; font-size: 11px; color: #10b981;">
+        <div style="margin-top: 4px; font-size: 11px; color: #39FFB8;">
           Speed: ${((latestEvent.speed || 0) * 3.6).toFixed(1)} km/h • ±${(latestEvent.accuracy || 0).toFixed(1)}m
         </div>
       </div>
@@ -602,7 +602,7 @@ function updateWsIndicator(status) {
       break;
     case 'DISCONNECTED':
       container.classList.add('disconnected');
-      textEl.innerHTML = '<span class="pulse-dot" style="background:#64748b;"></span> DISCONNECTED';
+      textEl.innerHTML = '<span class="pulse-dot" style="background:#4B5752;"></span> DISCONNECTED';
       break;
     case 'DEMO':
       container.classList.add('reconnecting');
@@ -809,7 +809,7 @@ function flashRow(tbodyId) {
   const tbody = document.getElementById(tbodyId);
   if (tbody && tbody.firstElementChild) {
     const row = tbody.firstElementChild;
-    row.style.background = 'rgba(0, 199, 232, 0.15)';
+    row.style.background = 'rgba(57, 255, 184, 0.15)';
     row.style.transition = 'background 600ms ease';
     setTimeout(() => {
       row.style.background = '';

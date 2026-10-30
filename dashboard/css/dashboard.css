@@ -1,7 +1,8 @@
 /* ==============================================================================
    Project TraceX — Security Operations Center (SOC) Dashboard Styles
-   Enterprise-grade forensic investigation interface
-   Solid surfaces • Restrained borders • High contrast • Fully responsive
+   Enterprise Digital Forensics & SOC Administration Interface
+   Jet Black (#000000) × Muted Moss Green (#608D83) × Neon Emerald (#39FFB8)
+   Solid technical surfaces • Restrained borders • High contrast • Fully responsive
    ============================================================================== */
 
 /* ============================== APP SHELL ============================== */
@@ -29,11 +30,11 @@
 .mobile-menu-btn {
   display: none;
   position: fixed;
-  top: 10px;
+  top: 8px;
   left: 10px;
   z-index: 40;
-  width: 36px;
-  height: 36px;
+  width: 34px;
+  height: 34px;
   background: var(--bg-panel);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
@@ -45,15 +46,15 @@
 }
 
 .mobile-menu-btn svg {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
 }
 
 .sidebar-overlay {
   display: none;
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.75);
   z-index: 25;
 }
 
@@ -64,6 +65,7 @@
   align-items: center;
   gap: 10px;
   flex-shrink: 0;
+  background: var(--tx-black);
 }
 
 .brand-icon {
@@ -75,7 +77,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--color-cyan);
+  color: var(--tx-emerald);
   font-weight: 800;
   font-size: 13px;
   font-family: var(--font-mono);
@@ -91,7 +93,7 @@
 
 .brand-subtitle {
   font-size: 10px;
-  color: var(--color-cyan);
+  color: var(--tx-moss);
   font-weight: 600;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -106,6 +108,7 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
+  background: var(--tx-black);
 }
 
 .nav-item {
@@ -131,9 +134,9 @@
 }
 
 .nav-item.active {
-  background: rgba(0, 199, 232, 0.08);
-  color: var(--color-cyan);
-  border-left-color: var(--color-cyan);
+  background: rgba(57, 255, 184, 0.08);
+  color: var(--tx-emerald);
+  border-left-color: var(--tx-emerald);
   font-weight: 600;
 }
 
@@ -147,7 +150,7 @@
 .sidebar-footer {
   padding: 12px 12px;
   border-top: 1px solid var(--border-color);
-  background: var(--bg-sidebar);
+  background: var(--tx-black);
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -171,7 +174,7 @@
   justify-content: center;
   font-size: 10px;
   font-weight: 700;
-  color: var(--color-cyan);
+  color: var(--tx-emerald);
   font-family: var(--font-mono);
   flex-shrink: 0;
 }
@@ -192,7 +195,7 @@
 
 .user-role {
   font-size: 10px;
-  color: var(--color-emerald);
+  color: var(--tx-moss);
   font-weight: 600;
 }
 
@@ -208,7 +211,7 @@
 
 .topbar {
   height: 48px;
-  background: var(--bg-sidebar);
+  background: var(--tx-black);
   border-bottom: 1px solid var(--border-color);
   display: flex;
   align-items: center;
@@ -250,7 +253,7 @@
 }
 
 .case-select:focus {
-  border-color: var(--color-cyan);
+  border-color: var(--tx-emerald);
 }
 
 .topbar-status {
@@ -275,8 +278,8 @@
 }
 
 .live-indicator.connected {
-  color: var(--color-emerald);
-  border-color: rgba(16, 185, 129, 0.3);
+  color: var(--tx-emerald);
+  border-color: rgba(57, 255, 184, 0.3);
 }
 
 .live-indicator.reconnecting {
@@ -298,6 +301,7 @@
   flex: 1;
   overflow-y: auto;
   padding: 16px;
+  background: var(--tx-black);
 }
 
 .view-panel {
@@ -327,7 +331,7 @@
 }
 
 .metric-card:hover {
-  border-color: rgba(0, 199, 232, 0.4);
+  border-color: rgba(57, 255, 184, 0.45);
 }
 
 .metric-header {
@@ -397,7 +401,7 @@
   font-family: var(--font-mono);
   font-size: 11px;
   font-weight: 700;
-  color: var(--color-cyan);
+  color: var(--tx-emerald);
 }
 
 .event-detail {
@@ -554,7 +558,7 @@
   color: var(--text-muted);
 }
 .search-input:focus {
-  border-color: var(--color-cyan);
+  border-color: var(--tx-emerald);
 }
 
 /* ============================== CHAIN OF CUSTODY TIMELINE ============================== */
@@ -591,7 +595,7 @@
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: var(--color-cyan);
+  background: var(--tx-emerald);
   border: 2px solid var(--bg-main);
 }
 
@@ -673,12 +677,12 @@
 }
 
 .map-device-item:hover {
-  border-color: rgba(0, 199, 232, 0.5);
+  border-color: rgba(57, 255, 184, 0.45);
 }
 
 .map-device-item.active {
-  border-color: var(--color-cyan);
-  background: rgba(0, 199, 232, 0.06);
+  border-color: var(--tx-emerald);
+  background: rgba(57, 255, 184, 0.08);
 }
 
 .map-viewport-container {
@@ -722,9 +726,9 @@
 }
 
 .map-time-btn.active, .map-time-btn:hover {
-  background: var(--color-cyan);
-  color: #000;
-  border-color: var(--color-cyan);
+  background: var(--tx-emerald);
+  color: #000000;
+  border-color: var(--tx-emerald);
 }
 
 .map-status-pill {
@@ -737,7 +741,7 @@
 
 /* ============================== LEAFLET MAP OVERRIDES ============================== */
 .leaflet-container {
-  background: #090f1d !important;
+  background: #000000 !important;
   font-family: var(--font-sans) !important;
 }
 
@@ -761,7 +765,7 @@
 }
 .leaflet-control-zoom a:hover {
   background: var(--bg-panel-hover) !important;
-  color: var(--color-cyan) !important;
+  color: var(--tx-emerald) !important;
 }
 
 .leaflet-popup-content-wrapper {
@@ -788,21 +792,21 @@
 }
 
 .dropzone:hover, .dropzone.dragover {
-  border-color: var(--color-cyan);
+  border-color: var(--tx-emerald);
 }
 
 .dropzone-icon {
   width: 32px;
   height: 32px;
   margin: 0 auto 8px;
-  color: var(--color-cyan);
+  color: var(--tx-emerald);
 }
 
 /* ============================== MODALS ============================== */
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.65);
+  background: rgba(0, 0, 0, 0.82);
   display: none;
   align-items: center;
   justify-content: center;
@@ -874,8 +878,8 @@
 }
 
 .dev-tab-btn.active {
-  color: var(--color-cyan);
-  border-bottom-color: var(--color-cyan);
+  color: var(--tx-emerald);
+  border-bottom-color: var(--tx-emerald);
 }
 
 .dev-tab-content {
@@ -891,7 +895,7 @@
 #auth-overlay {
   position: fixed;
   inset: 0;
-  background: var(--bg-main);
+  background: var(--tx-black);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -934,16 +938,16 @@
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  background: rgba(0, 199, 232, 0.3);
-  animation: markerPulse 2s infinite;
+  background: rgba(57, 255, 184, 0.28);
+  animation: markerPulse 2.2s infinite;
 }
 
 .tracex-marker-pin .core-dot {
   width: 9px;
   height: 9px;
   border-radius: 50%;
-  background: var(--color-cyan);
-  border: 2px solid #fff;
+  background: var(--tx-emerald);
+  border: 2px solid #000000;
   position: relative;
   z-index: 1;
 }
@@ -951,25 +955,6 @@
 @keyframes markerPulse {
   0% { transform: scale(0.6); opacity: 1; }
   100% { transform: scale(2.2); opacity: 0; }
-}
-
-/* ============================== PAGE-SPECIFIC: SEARCH BARS ============================== */
-.page-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-bottom: 12px;
-}
-
-.page-title {
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--text-primary);
-  display: flex;
-  align-items: center;
-  gap: 8px;
 }
 
 /* ============================== RESPONSIVE BREAKPOINTS ============================== */
@@ -1095,11 +1080,6 @@
   .data-table td {
     padding: 6px 8px;
     font-size: 11px;
-  }
-
-  .page-toolbar {
-    flex-direction: column;
-    align-items: stretch;
   }
 
   .device-summary-bar {

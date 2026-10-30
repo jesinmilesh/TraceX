@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/bg_dark"
+    android:background="@color/primary_jet_black"
     android:fillViewport="true">
 
     <LinearLayout
@@ -24,9 +24,9 @@
                 android:layout_width="44dp"
                 android:layout_height="44dp"
                 android:background="@drawable/ic_launcher_foreground"
-                android:backgroundTint="@color/primary_cyan"
+                android:backgroundTint="@color/primary_neon_emerald"
                 android:text="TX"
-                android:textColor="@color/text_white"
+                android:textColor="#000000"
                 android:textStyle="bold"
                 android:textSize="20sp"
                 android:gravity="center" />
@@ -49,7 +49,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Authorized Forensic Collection"
-                    android:textColor="@color/primary_cyan"
+                    android:textColor="@color/primary_moss_green"
                     android:textSize="12sp"
                     android:textStyle="bold" />
             </LinearLayout>
@@ -63,7 +63,8 @@
             app:cardBackgroundColor="@color/bg_surface"
             app:strokeColor="@color/border_subtle"
             app:strokeWidth="1dp"
-            app:cardCornerRadius="12dp">
+            app:cardCornerRadius="10dp"
+            app:cardElevation="0dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -77,16 +78,17 @@
                     android:text="AUTHORIZED CASE IDENTIFIER"
                     android:textColor="@color/text_muted"
                     android:textSize="11sp"
-                    android:textStyle="bold" />
+                    android:textStyle="bold"
+                    android:letterSpacing="0.04" />
 
                 <com.google.android.material.textfield.TextInputLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
                     android:hint="Case ID"
-                    app:boxStrokeColor="@color/primary_cyan"
-                    app:hintTextColor="@color/primary_cyan"
-                    android:textColorHint="@color/text_muted">
+                    app:boxStrokeColor="@color/primary_neon_emerald"
+                    app:hintTextColor="@color/primary_neon_emerald"
+                    android:textColorHint="@color/text_dim">
 
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/et_case_id"
@@ -116,7 +118,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="DEV-UNKNOWN"
-                        android:textColor="@color/primary_cyan"
+                        android:textColor="@color/primary_neon_emerald"
                         android:fontFamily="monospace"
                         android:textStyle="bold"
                         android:textSize="12sp" />
@@ -128,9 +130,10 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
                     android:text="Verify &amp; Update Case"
-                    android:backgroundTint="@color/border_subtle"
+                    android:backgroundTint="@color/primary_moss_green"
                     android:textColor="@color/text_white"
-                    app:cornerRadius="8dp" />
+                    android:textStyle="bold"
+                    app:cornerRadius="6dp" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
@@ -142,7 +145,8 @@
             app:cardBackgroundColor="@color/bg_surface"
             app:strokeColor="@color/border_subtle"
             app:strokeWidth="1dp"
-            app:cardCornerRadius="12dp">
+            app:cardCornerRadius="10dp"
+            app:cardElevation="0dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -156,7 +160,8 @@
                     android:text="PERMISSION &amp; COMPLIANCE CENTER"
                     android:textColor="@color/text_muted"
                     android:textSize="11sp"
-                    android:textStyle="bold" />
+                    android:textStyle="bold"
+                    android:letterSpacing="0.04" />
 
                 <TextView
                     android:layout_width="match_parent"
@@ -177,7 +182,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="horizontal"
-                        android:layout_marginBottom="4dp">
+                        android:layout_marginBottom="6dp">
                         <TextView
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
@@ -198,7 +203,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="horizontal"
-                        android:layout_marginBottom="4dp">
+                        android:layout_marginBottom="6dp">
                         <TextView
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
@@ -219,7 +224,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="horizontal"
-                        android:layout_marginBottom="4dp">
+                        android:layout_marginBottom="6dp">
                         <TextView
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
@@ -262,7 +267,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text=""
-                    android:textColor="@color/text_muted"
+                    android:textColor="@color/text_dim"
                     android:textSize="10sp"
                     android:layout_marginTop="6dp" />
 
@@ -272,9 +277,12 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="10dp"
                     android:text="Request / Review Permissions"
-                    android:backgroundTint="@color/border_subtle"
-                    android:textColor="@color/primary_cyan"
-                    app:cornerRadius="8dp" />
+                    android:backgroundTint="@color/bg_surface_secondary"
+                    android:textColor="@color/primary_neon_emerald"
+                    app:strokeColor="@color/border_subtle"
+                    app:strokeWidth="1dp"
+                    android:textStyle="bold"
+                    app:cornerRadius="6dp" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
@@ -286,7 +294,8 @@
             app:cardBackgroundColor="@color/bg_surface"
             app:strokeColor="@color/border_subtle"
             app:strokeWidth="1dp"
-            app:cardCornerRadius="12dp">
+            app:cardCornerRadius="10dp"
+            app:cardElevation="0dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -300,7 +309,8 @@
                     android:text="COLLECTION SESSION STATUS"
                     android:textColor="@color/text_muted"
                     android:textSize="11sp"
-                    android:textStyle="bold" />
+                    android:textStyle="bold"
+                    android:letterSpacing="0.04" />
 
                 <TextView
                     android:id="@+id/tv_collection_status"
@@ -308,7 +318,7 @@
                     android:layout_height="wrap_content"
                     android:text="COLLECTION STOPPED"
                     android:textColor="@color/status_red"
-                    android:textSize="20sp"
+                    android:textSize="18sp"
                     android:textStyle="bold"
                     android:layout_marginTop="4dp" />
 
@@ -327,8 +337,9 @@
                         android:layout_marginEnd="6dp"
                         android:text="START COLLECTION"
                         android:textStyle="bold"
-                        android:backgroundTint="@color/primary_blue"
-                        app:cornerRadius="8dp" />
+                        android:textColor="#000000"
+                        android:backgroundTint="@color/primary_neon_emerald"
+                        app:cornerRadius="6dp" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btn_stop_service"
@@ -338,8 +349,9 @@
                         android:layout_marginStart="6dp"
                         android:text="STOP COLLECTION"
                         android:textStyle="bold"
+                        android:textColor="@color/text_white"
                         android:backgroundTint="@color/status_red"
-                        app:cornerRadius="8dp" />
+                        app:cornerRadius="6dp" />
                 </LinearLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
@@ -351,7 +363,8 @@
             app:cardBackgroundColor="@color/bg_surface"
             app:strokeColor="@color/border_subtle"
             app:strokeWidth="1dp"
-            app:cardCornerRadius="12dp">
+            app:cardCornerRadius="10dp"
+            app:cardElevation="0dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -365,7 +378,8 @@
                     android:text="EVIDENCE TELEMETRY MONITOR"
                     android:textColor="@color/text_muted"
                     android:textSize="11sp"
-                    android:textStyle="bold" />
+                    android:textStyle="bold"
+                    android:letterSpacing="0.04" />
 
                 <TextView
                     android:id="@+id/tv_last_location"
@@ -390,7 +404,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Evidence Hash: N/A"
-                    android:textColor="@color/primary_cyan"
+                    android:textColor="@color/primary_neon_emerald"
                     android:fontFamily="monospace"
                     android:textSize="11sp"
                     android:layout_marginTop="4dp" />
@@ -419,7 +433,8 @@
                         android:text="Synced: 0 events"
                         android:textColor="@color/status_green"
                         android:textSize="12sp"
-                        android:gravity="end" />
+                        android:gravity="end"
+                        android:textStyle="bold" />
                 </LinearLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
