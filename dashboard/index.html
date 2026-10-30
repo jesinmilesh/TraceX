@@ -14,11 +14,15 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 
+  <!-- Google Maps JavaScript API (Project Key) -->
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDvDVIzNujFysbBBBNm3tuPBi5Mc83FQ5A&libraries=geometry,places" async defer></script>
+
   <link rel="stylesheet" href="./css/style.css">
   <link rel="stylesheet" href="./css/dashboard.css">
 
   <!-- Runtime Endpoint & Demonstration Mode Configuration -->
   <script>
+    window.GOOGLE_MAPS_API_KEY = 'AIzaSyDvDVIzNujFysbBBBNm3tuPBi5Mc83FQ5A';
     const _params = new URLSearchParams(window.location.search);
     const _isDemoQuery = _params.get('demo') === '1' || _params.get('demo') === 'true';
     if (_isDemoQuery && typeof localStorage !== 'undefined') {

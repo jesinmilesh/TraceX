@@ -245,6 +245,12 @@ document.addEventListener('DOMContentLoaded', () => {
     initDashboardData();
   }
 
+  // 6b. URL Hash Navigation support (e.g. #map, #devices)
+  const initialHash = window.location.hash.replace('#', '');
+  if (initialHash && ['overview', 'map', 'cases', 'devices', 'calls', 'messages', 'telemetry', 'evidence', 'custody', 'audit', 'reports'].includes(initialHash)) {
+    switchView(initialHash);
+  }
+
   // 7. Forensic UTC Timestamp Clock in Topbar
   const clockEl = document.getElementById('utc-clock');
   function updateClock() {

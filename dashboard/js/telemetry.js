@@ -28,6 +28,9 @@ const MAX_RECONNECT_ATTEMPTS = 5;
 const BASE_RECONNECT_DELAY_MS = 2000;
 const MAX_RECONNECT_DELAY_MS = 30000;
 
+// Google Maps Integration Key
+export const GOOGLE_MAPS_API_KEY = window.GOOGLE_MAPS_API_KEY || 'AIzaSyDvDVIzNujFysbBBBNm3tuPBi5Mc83FQ5A';
+
 // Leaflet Map State
 let leafletMap = null;
 let deviceMarkers = {};
@@ -351,47 +354,91 @@ export function initLeafletMap(containerId = 'live-map-canvas') {
       attributionControl: false
     }).setView([37.7749, -122.4194], 13);
 
-    // 1. Primary Base Layer: CartoDB Dark Matter (watermark-free)
+    // Google Maps API Key
+    const googleApiKey = window.GOOGLE_MAPS_API_KEY || GOOGLE_MAPS_API_KEY;
+
+    // 1. Google Maps Base Layers (Roadmap, Satellite, Hybrid, Terrain)
+    const googleRoadmap = window.L.tileLayer(
+      `https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}&key=${googleApiKey}`,
+      {
+        maxZoom: 21,
+        subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+        attribution: '&copy; <a href="https://maps.google.com" target="_blank" style="color: #608D83;">Google Maps</a>'
+      }
+    );
+
+    const googleHybrid = window.L.tileLayer(
+      `https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}&key=${googleApiKey}`,
+      {
+        maxZoom: 21,
+        subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+        attribution: '&copy; <a href="https://maps.google.com" target="_blank" style="color: #608D83;">Google Maps</a>'
+      }
+    );
+
+    const googleSatellite = window.L.tileLayer(
+      `https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}&key=${googleApiKey}`,
+      {
+        maxZoom: 21,
+        subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+        attribution: '&copy; <a href="https://maps.google.com" target="_blank" style="color: #608D83;">Google Maps</a>'
+      }
+    );
+
+    const googleTerrain = window.L.tileLayer(
+      `https://{s}.google.com/vt/lyrs=p&x={x}&y={y}&z={z}&key=${googleApiKey}`,
+      {
+        maxZoom: 21,
+        subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+        attribution: '&copy; <a href="https://maps.google.com" target="_blank" style="color: #608D83;">Google Maps</a>'
+      }
+    );
+
+    // 2. Forensic Jet Dark (CartoDB) & Fallback OSM
     const cartoDark = window.L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png', {
       maxZoom: 19,
       subdomains: 'abcd',
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions" target="_blank">CARTO</a>'
     });
 
-    // 2. OpenStreetMap Standard Layer (Guaranteed 100% free fallback)
     const osmStandard = window.L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors'
     });
 
-    // 3. CartoDB Positron (High-contrast light layer)
     const cartoLight = window.L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', {
       maxZoom: 19,
       subdomains: 'abcd',
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions" target="_blank">CARTO</a>'
     });
 
-    // Graceful tile error handler: automatically fallback to OpenStreetMap if Carto tile fails
-    cartoDark.on('tileerror', function (error, tile) {
+    // Graceful tile error handler
+    const fallbackToOsm = function (error, tile) {
       if (tile && error && error.coords) {
         tile.src = `https://tile.openstreetmap.org/${error.coords.z}/${error.coords.x}/${error.coords.y}.png`;
       }
-    });
+    };
+    googleHybrid.on('tileerror', fallbackToOsm);
+    googleRoadmap.on('tileerror', fallbackToOsm);
+    cartoDark.on('tileerror', fallbackToOsm);
 
-    // Add default layer
-    cartoDark.addTo(leafletMap);
+    // Set Google Maps Hybrid as default primary view (or Forensic Jet Dark via switch)
+    googleHybrid.addTo(leafletMap);
 
     // Layer Controls
     const baseLayers = {
+      'Google Maps (Hybrid)': googleHybrid,
+      'Google Maps (Roadmap)': googleRoadmap,
+      'Google Maps (Satellite)': googleSatellite,
+      'Google Maps (Terrain)': googleTerrain,
       'Forensic Jet Dark (CartoDB)': cartoDark,
-      'OpenStreetMap Standard': osmStandard,
-      'Positron Light (CartoDB)': cartoLight
+      'OpenStreetMap Standard': osmStandard
     };
     window.L.control.layers(baseLayers, null, { position: 'topright' }).addTo(leafletMap);
 
     // Map attribution
     window.L.control.attribution({ position: 'bottomright' })
-      .addAttribution('&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" style="color: #608D83;">OSM</a> &copy; <a href="https://carto.com" target="_blank" style="color: #608D83;">CARTO</a>')
+      .addAttribution('&copy; <a href="https://maps.google.com" target="_blank" style="color: #608D83;">Google Maps</a> &copy; <a href="https://carto.com" target="_blank" style="color: #608D83;">CARTO</a>')
       .addTo(leafletMap);
 
     setTimeout(() => {
