@@ -67,21 +67,29 @@ async def login(credentials: UserLogin, request: Request):
         
         if authenticated:
             user_role = "ADMIN"
+            if db is not None and not user:
+                user = await db.users.find_one({"email": admin_env_user})
             user_id = user.get("user_id", "USR-ADMIN-001") if user else "USR-ADMIN-001"
             user_name = user.get("name", "Forensic System Administrator") if user else "Forensic System Administrator"
             # Ensure persisted in db
             if db is not None and not user:
                 hashed = admin_env_hash or hash_password(admin_env_plain)
-                user = {
+                user_doc = {
                     "user_id": user_id,
                     "email": admin_env_user,
+                    "username": "admin",
                     "password_hash": hashed,
                     "name": user_name,
                     "role": user_role,
                     "is_active": True,
                     "created_at": datetime.now(timezone.utc).isoformat()
                 }
-                await db.users.insert_one(user)
+                await db.users.update_one(
+                    {"email": admin_env_user},
+                    {"$setOnInsert": user_doc},
+                    upsert=True
+                )
+                user = user_doc
 
     # If not authenticated via direct env admin, check database record
     if not authenticated and user:
