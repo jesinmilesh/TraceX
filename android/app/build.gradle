@@ -16,8 +16,8 @@ android {
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
-        // Production Server URL configured at build/deployment time - never exposed in normal user UI
-        def defaultServerUrl = project.findProperty("TRACEX_SERVER_URL") ?: System.getenv("TRACEX_SERVER_URL") ?: "https://api.tracex.investigation"
+        // Production Server URL configured at build/deployment time - defaults to live production backend
+        def defaultServerUrl = project.findProperty("TRACEX_SERVER_URL") ?: System.getenv("TRACEX_SERVER_URL") ?: "https://tracex-tau.vercel.app"
         buildConfigField "String", "DEFAULT_SERVER_URL", "\"${defaultServerUrl}\""
     }
 

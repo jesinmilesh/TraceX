@@ -6,6 +6,10 @@
             <certificates src="system" />
         </trust-anchors>
     </base-config>
+    <!-- Allow local Android emulator loopback for testing -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">10.0.2.2</domain>
+    </domain-config>
     <!-- Debug overrides for local developer test suites -->
     <debug-overrides>
         <trust-anchors>
