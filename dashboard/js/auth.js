@@ -4,7 +4,7 @@
  * Exclusively authenticates against real backend credentials.
  */
 
-import { api, showToast } from './api.js';
+import { api, showToast, API_BASE } from './api.js';
 
 export function getStoredUser() {
   const userStr = localStorage.getItem('tracex_user');
@@ -23,6 +23,30 @@ export function initAuth(onLoginSuccess) {
   const authOverlay = document.getElementById('auth-overlay');
   const loginForm = document.getElementById('login-form');
   const logoutBtn = document.getElementById('logout-btn');
+  const loginErrorAlert = document.getElementById('login-error-alert');
+  const loginBackendUrlEl = document.getElementById('login-backend-url');
+  const changeServerBtn = document.getElementById('btn-login-change-server');
+  const serverConfigModal = document.getElementById('modal-server-config');
+  const serverUrlInput = document.getElementById('cfg-server-url');
+
+  function updateServerDisplay() {
+    if (loginBackendUrlEl) {
+      const displayUrl = API_BASE.replace(/\/api\/v1$/, '') || window.location.origin;
+      loginBackendUrlEl.textContent = displayUrl;
+    }
+  }
+
+  updateServerDisplay();
+  window.addEventListener('tracex:api-base-changed', updateServerDisplay);
+
+  if (changeServerBtn && serverConfigModal) {
+    changeServerBtn.addEventListener('click', () => {
+      if (serverUrlInput) {
+        serverUrlInput.value = localStorage.getItem('tracex_api_base_url') || API_BASE.replace(/\/api\/v1$/, '');
+      }
+      serverConfigModal.classList.add('active');
+    });
+  }
 
   function updateAuthUI() {
     const user = getStoredUser();
@@ -43,6 +67,7 @@ export function initAuth(onLoginSuccess) {
     } else {
       if (authOverlay) authOverlay.style.display = 'flex';
       if (bottomNav) bottomNav.style.display = 'none';
+      updateServerDisplay();
     }
   }
 
@@ -53,6 +78,11 @@ export function initAuth(onLoginSuccess) {
       const email = document.getElementById('login-email').value.trim();
       const password = document.getElementById('login-password').value;
       const submitBtn = loginForm.querySelector('button[type="submit"]');
+
+      if (loginErrorAlert) {
+        loginErrorAlert.style.display = 'none';
+        loginErrorAlert.textContent = '';
+      }
 
       try {
         if (submitBtn) {
@@ -68,7 +98,16 @@ export function initAuth(onLoginSuccess) {
         updateAuthUI();
         if (onLoginSuccess) onLoginSuccess();
       } catch (err) {
-        showToast(err.message || 'Authentication failed', 'error');
+        const errorText = err.message || 'Authentication failed';
+        if (loginErrorAlert) {
+          loginErrorAlert.style.display = 'block';
+          if (errorText.includes('404') || errorText.includes('connect')) {
+            loginErrorAlert.innerHTML = `<strong>Server Connection Error:</strong> Unable to reach FastAPI backend at <code>${API_BASE}</code>.<br><small style="color:#94a3b8;">Click 'Configure' below to set the backend URL (e.g. <code>http://localhost:8000</code> or your production server).</small>`;
+          } else {
+            loginErrorAlert.textContent = errorText;
+          }
+        }
+        showToast(errorText, 'error');
       } finally {
         if (submitBtn) {
           submitBtn.disabled = false;
