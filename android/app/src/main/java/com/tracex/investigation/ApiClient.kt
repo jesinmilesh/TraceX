@@ -24,6 +24,8 @@ object ApiClient {
         val trimmed = rawUrl.trim().trimEnd('/')
         return if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
             trimmed
+        } else if (trimmed.startsWith("localhost") || trimmed.startsWith("127.0.0.1") || trimmed.startsWith("10.") || trimmed.startsWith("192.168.") || trimmed.startsWith("172.")) {
+            "http://$trimmed"
         } else {
             "https://$trimmed"
         }

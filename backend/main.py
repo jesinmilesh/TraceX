@@ -97,10 +97,13 @@ app = FastAPI(
 # Strict origin isolation: never uses allow_origins=["*"]
 cors_origins = settings.ALLOWED_ORIGINS
 
+# Whitelist local network subnets (10.x, 192.168.x, 172.16-31.x, localhost) and Vercel domains
+cors_lan_regex = r"^(https://tracex.*\.vercel\.app|http://(localhost|127\.0\.0\.1|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3})(:\d+)?)$"
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,
-    allow_origin_regex=r"^https://tracex.*\.vercel\.app$" if settings.is_production() else None,
+    allow_origin_regex=cors_lan_regex,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["*"],

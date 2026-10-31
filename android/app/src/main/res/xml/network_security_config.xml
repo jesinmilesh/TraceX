@@ -1,15 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
-    <!-- Production Network Security: Strict HTTPS enforcement -->
-    <base-config cleartextTrafficPermitted="false">
+    <!-- Allows cleartext HTTP traffic for localhost and local network (LAN) endpoints -->
+    <base-config cleartextTrafficPermitted="true">
         <trust-anchors>
             <certificates src="system" />
         </trust-anchors>
     </base-config>
-    <!-- Allow local Android emulator loopback for testing -->
-    <domain-config cleartextTrafficPermitted="true">
-        <domain includeSubdomains="true">10.0.2.2</domain>
-    </domain-config>
     <!-- Debug overrides for local developer test suites -->
     <debug-overrides>
         <trust-anchors>
