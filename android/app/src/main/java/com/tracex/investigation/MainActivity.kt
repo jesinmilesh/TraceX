@@ -6,9 +6,11 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import com.tracex.investigation.databinding.ActivityMainBinding
@@ -220,6 +222,12 @@ class MainActivity : AppCompatActivity() {
         }
 
         permissionLauncher.launch(permissions.toTypedArray())
+
+        val enabledListeners = NotificationManagerCompat.getEnabledListenerPackages(this)
+        if (!enabledListeners.contains(packageName)) {
+            val intent = Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
+            startActivity(intent)
+        }
     }
 
     private fun hasLocationPermission(): Boolean {
