@@ -78,57 +78,95 @@ export function initAuth(onLoginSuccess) {
   }
 
   // 1. Standard Form Login against Backend
-  if (loginForm) {
-    loginForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const rawIdent = document.getElementById('login-email').value.trim();
-      const password = document.getElementById('login-password').value;
-      const submitBtn = loginForm.querySelector('button[type="submit"]');
+  let isSubmitting = false;
 
+  async function handleLoginSubmit(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    if (isSubmitting) return;
+
+    const emailInput = document.getElementById('login-email');
+    const passwordInput = document.getElementById('login-password');
+    const rawIdent = (emailInput ? emailInput.value : '').trim();
+    const password = passwordInput ? passwordInput.value : '';
+    const submitBtn = document.getElementById('btn-login-submit') || (loginForm ? loginForm.querySelector('button[type="submit"]') : null);
+
+    if (!rawIdent || !password) {
       if (loginErrorAlert) {
-        loginErrorAlert.style.display = 'none';
-        loginErrorAlert.textContent = '';
+        loginErrorAlert.style.display = 'block';
+        loginErrorAlert.textContent = 'Please enter both username/email and password.';
+      }
+      return;
+    }
+
+    if (loginErrorAlert) {
+      loginErrorAlert.style.display = 'none';
+      loginErrorAlert.textContent = '';
+    }
+
+    try {
+      isSubmitting = true;
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Verifying Credentials...';
       }
 
+      console.log('[TraceX Auth] Attempting login to:', API_BASE, 'with identifier:', rawIdent);
+      const data = await api.post('/auth/login', { 
+        email: rawIdent, 
+        username: rawIdent, 
+        password 
+      });
+
+      console.log('[TraceX Auth] Authentication succeeded for:', data.user.email);
+      localStorage.setItem('tracex_token', data.access_token);
+      localStorage.setItem('tracex_user', JSON.stringify(data.user));
+
+      if (authOverlay) {
+        authOverlay.style.setProperty('display', 'none', 'important');
+        authOverlay.classList.add('hidden');
+      }
+
+      showToast(`Authenticated as ${data.user.role}: ${data.user.email}`, 'success');
+      updateAuthUI();
+      
       try {
-        if (submitBtn) {
-          submitBtn.disabled = true;
-          submitBtn.textContent = 'Verifying Credentials...';
-        }
-
-        const data = await api.post('/auth/login', { 
-          email: rawIdent, 
-          username: rawIdent, 
-          password 
-        });
-        localStorage.setItem('tracex_token', data.access_token);
-        localStorage.setItem('tracex_user', JSON.stringify(data.user));
-
-        showToast(`Authenticated as ${data.user.role}: ${data.user.email}`, 'success');
-        updateAuthUI();
-        
-        try {
-          if (onLoginSuccess) onLoginSuccess();
-        } catch (initErr) {
-          console.error('[TraceX] Post-login initialization note:', initErr);
-        }
-      } catch (err) {
-        const errorText = err.message || 'Authentication failed';
-        if (loginErrorAlert) {
-          loginErrorAlert.style.display = 'block';
-          if (errorText.includes('404') || errorText.includes('connect')) {
-            loginErrorAlert.innerHTML = `<strong>Server Connection Error:</strong> Unable to reach FastAPI backend at <code>${API_BASE}</code>.<br><small style="color:#94a3b8;">Click 'Configure' below to set the backend URL (e.g. your active server address).</small>`;
-          } else {
-            loginErrorAlert.textContent = errorText;
-          }
-        }
-        showToast(errorText, 'error');
-      } finally {
-        if (submitBtn) {
-          submitBtn.disabled = false;
-          submitBtn.textContent = 'Authenticate & Enter SOC';
+        if (onLoginSuccess) onLoginSuccess();
+      } catch (initErr) {
+        console.error('[TraceX] Post-login initialization note:', initErr);
+      }
+    } catch (err) {
+      console.error('[TraceX Auth] Login error:', err);
+      const errorText = err.message || 'Authentication failed';
+      if (loginErrorAlert) {
+        loginErrorAlert.style.display = 'block';
+        if (errorText.includes('404') || errorText.includes('connect')) {
+          loginErrorAlert.innerHTML = `<strong>Server Connection Error:</strong> Unable to reach FastAPI backend at <code>${API_BASE}</code>.<br><small style="color:#94a3b8;">Click 'Configure' below to set the backend URL (e.g. your active server address).</small>`;
+        } else {
+          loginErrorAlert.textContent = errorText;
         }
       }
+      showToast(errorText, 'error');
+    } finally {
+      isSubmitting = false;
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Authenticate & Enter SOC';
+      }
+    }
+  }
+
+  if (loginForm) {
+    loginForm.addEventListener('submit', handleLoginSubmit);
+  }
+
+  const submitButtonEl = document.getElementById('btn-login-submit');
+  if (submitButtonEl) {
+    submitButtonEl.addEventListener('click', (e) => {
+      if (loginForm && !loginForm.checkValidity()) {
+        loginForm.reportValidity();
+        return;
+      }
+      handleLoginSubmit(e);
     });
   }
 

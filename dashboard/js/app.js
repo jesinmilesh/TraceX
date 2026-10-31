@@ -467,6 +467,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Initialize Core Modules & Auth
   initAuth(() => {
+    switchView('overview');
     initDashboardData();
     initWebSocket();
   });
