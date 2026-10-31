@@ -117,22 +117,44 @@ app.include_router(audit_router, prefix="/api/v1")
 app.include_router(reports_router, prefix="/api/v1")
 app.include_router(config_router, prefix="/api/v1")
 
+class NoCacheStaticFiles(StaticFiles):
+    """Static file handler that bypasses browser conditional caching to always serve 200 OK."""
+    async def get_response(self, path: str, scope):
+        if "headers" in scope:
+            scope = dict(scope)
+            scope["headers"] = [
+                (k, v) for k, v in scope["headers"]
+                if k.lower() not in (b"if-none-match", b"if-modified-since")
+            ]
+        response = await super().get_response(path, scope)
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+        return response
+
 # Mount Dashboard Static Files
 dashboard_dir = Path(__file__).resolve().parent.parent / "dashboard"
 if dashboard_dir.exists():
     css_dir = dashboard_dir / "css"
     js_dir = dashboard_dir / "js"
     if css_dir.exists():
-        app.mount("/css", StaticFiles(directory=str(css_dir)), name="css")
+        app.mount("/css", NoCacheStaticFiles(directory=str(css_dir)), name="css")
     if js_dir.exists():
-        app.mount("/js", StaticFiles(directory=str(js_dir)), name="js")
-    app.mount("/dashboard", StaticFiles(directory=str(dashboard_dir), html=True), name="dashboard")
+        app.mount("/js", NoCacheStaticFiles(directory=str(js_dir)), name="js")
+    app.mount("/dashboard", NoCacheStaticFiles(directory=str(dashboard_dir), html=True), name="dashboard")
 
 @app.get("/")
 async def root():
     index_file = dashboard_dir / "index.html"
     if index_file.exists():
-        return FileResponse(str(index_file))
+        return FileResponse(
+            str(index_file),
+            headers={
+                "Cache-Control": "no-cache, no-store, must-revalidate",
+                "Pragma": "no-cache",
+                "Expires": "0"
+            }
+        )
     return {
         "name": "Project TraceX - Digital Evidence Core",
         "status": "ONLINE",
