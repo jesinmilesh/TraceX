@@ -8,6 +8,7 @@ import { initCases, loadCases } from './cases.js';
 import { initDevices, loadDevices, getDevicesList } from './devices.js';
 import {
   initWebSocket,
+  closeWebSocket,
   loadTelemetryHistory,
   loadCallLogs,
   loadMessages,
@@ -467,6 +468,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Initialize Core Modules & Auth
   initAuth(() => {
     initDashboardData();
+    initWebSocket();
   });
   initCases();
   initDevices();
@@ -474,10 +476,14 @@ document.addEventListener('DOMContentLoaded', () => {
   initCustody();
   initAudit();
   initReports();
-  initWebSocket();
+
+  window.addEventListener('auth:logout', () => {
+    closeWebSocket();
+  });
 
   if (isAuthenticated()) {
     initDashboardData();
+    initWebSocket();
   }
 
   // URL Hash Navigation support (e.g. #map, #devices)

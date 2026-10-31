@@ -161,14 +161,56 @@ async def health():
         "environment": settings.ENVIRONMENT
     }
 
+from jose import jwt, JWTError
+
 @app.websocket("/ws/investigation")
-async def websocket_investigation_endpoint(websocket: WebSocket):
-    await ws_manager.connect(websocket)
+async def websocket_investigation_endpoint(websocket: WebSocket, token: str = None):
+    auth_token = token or websocket.query_params.get("token")
+    user_id = None
+    user_role = None
+
+    if auth_token:
+        try:
+            payload = jwt.decode(auth_token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
+            user_id = payload.get("sub")
+            user_role = payload.get("role", "INVESTIGATOR")
+        except JWTError:
+            pass
+
+    if not user_id:
+        await websocket.accept()
+        try:
+            import json, asyncio
+            raw_msg = await asyncio.wait_for(websocket.receive_text(), timeout=4.0)
+            data = json.loads(raw_msg)
+            if data.get("type") == "AUTHENTICATE" and data.get("token"):
+                payload = jwt.decode(data["token"], settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
+                user_id = payload.get("sub")
+                user_role = payload.get("role", "INVESTIGATOR")
+        except Exception:
+            pass
+
+        if not user_id:
+            try:
+                await websocket.send_json({
+                    "type": "AUTH_ERROR",
+                    "message": "Authentication required. Provide valid JWT token to subscribe to live forensic telemetry."
+                })
+                await websocket.close(code=1008)
+            except Exception:
+                pass
+            return
+    else:
+        await ws_manager.connect(websocket)
+
     try:
         # Welcome handshake
         await websocket.send_json({
             "type": "CONNECTION_ESTABLISHED",
             "event": "CONNECTION_ESTABLISHED",
+            "authenticated": True,
+            "user_id": user_id,
+            "role": user_role,
             "message": "Connected to Project TraceX live forensic telemetry stream",
             "timestamp": datetime.now(timezone.utc).isoformat()
         })

@@ -119,15 +119,29 @@ export function initAuth(onLoginSuccess) {
 
   // 2. Terminate Session / Logout
   if (logoutBtn) {
-    logoutBtn.addEventListener('click', () => {
+    logoutBtn.addEventListener('click', async () => {
+      try {
+        await api.post('/auth/logout', {});
+      } catch (e) {
+        // Continue clearing client state even if backend is unreachable
+      }
       localStorage.removeItem('tracex_token');
       localStorage.removeItem('tracex_user');
+      window.dispatchEvent(new CustomEvent('auth:logout'));
       showToast('Terminated Project TraceX Session', 'info');
       updateAuthUI();
     });
   }
 
   window.addEventListener('auth:expired', () => {
+    localStorage.removeItem('tracex_token');
+    localStorage.removeItem('tracex_user');
+    window.dispatchEvent(new CustomEvent('auth:logout'));
+    if (loginErrorAlert) {
+      loginErrorAlert.style.display = 'block';
+      loginErrorAlert.textContent = 'Your session has expired. Please log in again.';
+    }
+    showToast('Your session has expired. Please log in again.', 'warning');
     updateAuthUI();
   });
 

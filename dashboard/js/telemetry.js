@@ -1040,23 +1040,36 @@ function updateWsIndicator(status) {
 }
 
 function determineWsUrl() {
+  const token = localStorage.getItem('tracex_token');
+  let baseWs = '';
   if (typeof window !== 'undefined' && window.__TRACEX_CONFIG__ && window.__TRACEX_CONFIG__.WS_URL) {
-    return window.__TRACEX_CONFIG__.WS_URL;
-  }
-  if (typeof window !== 'undefined' && window.__TRACEX_WS_URL__) {
-    return window.__TRACEX_WS_URL__;
-  }
-  // Derive WebSocket URL from API_BASE
-  if (typeof API_BASE === 'string' && API_BASE.startsWith('http')) {
+    baseWs = window.__TRACEX_CONFIG__.WS_URL;
+  } else if (typeof window !== 'undefined' && window.__TRACEX_WS_URL__) {
+    baseWs = window.__TRACEX_WS_URL__;
+  } else if (typeof API_BASE === 'string' && API_BASE.startsWith('http')) {
     try {
       const u = new URL(API_BASE);
       const wsProto = u.protocol === 'https:' ? 'wss:' : 'ws:';
-      return `${wsProto}//${u.host}/ws/investigation`;
+      baseWs = `${wsProto}//${u.host}/ws/investigation`;
     } catch (e) {}
   }
-  const loc = window.location;
-  const protocol = loc.protocol === 'https:' ? 'wss:' : 'ws:';
-  return `${protocol}//${loc.host}/ws/investigation`;
+  if (!baseWs) {
+    const loc = window.location;
+    const protocol = loc.protocol === 'https:' ? 'wss:' : 'ws:';
+    baseWs = `${protocol}//${loc.host}/ws/investigation`;
+  }
+  return token ? `${baseWs}?token=${encodeURIComponent(token)}` : baseWs;
+}
+
+export function closeWebSocket() {
+  clearInterval(heartbeatInterval);
+  clearTimeout(reconnectTimer);
+  reconnectAttempts = 0;
+  if (ws) {
+    try { ws.close(); } catch (e) {}
+    ws = null;
+  }
+  updateWsIndicator('DISCONNECTED');
 }
 
 export function initWebSocket() {
@@ -1070,15 +1083,26 @@ export function initWebSocket() {
     ws = null;
   }
 
+  // Guard: Do not initiate authenticated WebSocket if not authenticated
+  const token = localStorage.getItem('tracex_token');
+  if (!token) {
+    updateWsIndicator('DISCONNECTED');
+    return;
+  }
+
   // ---------------- LIVE SOC WEBSOCKET (REAL BACKEND) ----------------
   const wsUrl = determineWsUrl();
   updateWsIndicator('DISCONNECTED');
 
   function connect() {
+    if (!localStorage.getItem('tracex_token')) {
+      updateWsIndicator('DISCONNECTED');
+      return;
+    }
     try {
       reconnectAttempts++;
       updateWsIndicator(reconnectAttempts > 1 ? 'RECONNECTING' : 'CONNECTING');
-      ws = new WebSocket(wsUrl);
+      ws = new WebSocket(determineWsUrl());
 
       ws.onopen = () => {
         const wasReconnecting = reconnectAttempts > 1;

@@ -7,13 +7,37 @@ from config.settings import settings
 from services.auth_service import hash_password, verify_password, create_access_token, get_current_user, require_roles
 from services.audit_service import log_audit_event
 
+from services.rate_limiter import login_rate_limiter
+
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 @router.post("/login", response_model=Token)
 async def login(credentials: UserLogin, request: Request):
     db = get_database()
-    input_email = credentials.email.lower().strip()
+    input_ident = (credentials.email or credentials.username or "").lower().strip()
     client_ip = request.client.host if request.client else "unknown"
+
+    if not input_ident or not credentials.password:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Username or email and password are required"
+        )
+
+    # Brute-force rate limiting protection
+    is_limited, cooldown = login_rate_limiter.is_rate_limited(client_ip, input_ident)
+    if is_limited:
+        await log_audit_event(
+            actor=input_ident,
+            role="UNKNOWN",
+            action="LOGIN_RATE_LIMITED",
+            resource="/auth/login",
+            ip_address=client_ip,
+            details={"reason": "Excessive failed attempts", "cooldown_seconds": cooldown}
+        )
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many login attempts. Please wait and try again."
+        )
 
     # Fail closed if production admin credentials missing and no active users
     admin_env_user = settings.TRACEX_ADMIN_USERNAME.lower().strip()
@@ -22,15 +46,15 @@ async def login(credentials: UserLogin, request: Request):
 
     user = None
     if db is not None:
-        user = await db.users.find_one({"email": input_email})
+        user = await db.users.find_one({"$or": [{"email": input_ident}, {"username": input_ident}]})
 
     authenticated = False
     user_role = "INVESTIGATOR"
     user_id = ""
-    user_name = input_email
+    user_name = input_ident
 
     # Check against environment configured admin credentials
-    if admin_env_user and input_email == admin_env_user:
+    if admin_env_user and input_ident == admin_env_user:
         if admin_env_hash and verify_password(credentials.password, admin_env_hash):
             authenticated = True
         elif admin_env_plain and credentials.password == admin_env_plain:
@@ -63,8 +87,9 @@ async def login(credentials: UserLogin, request: Request):
             user_name = user.get("name", user["email"])
 
     if not authenticated:
+        login_rate_limiter.record_failure(client_ip, input_ident)
         await log_audit_event(
-            actor=credentials.email,
+            actor=input_ident,
             role="UNKNOWN",
             action="LOGIN_FAILED",
             resource="/auth/login",
@@ -73,17 +98,21 @@ async def login(credentials: UserLogin, request: Request):
         )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid email or password",
+            detail="Invalid username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
     if user and not user.get("is_active", True):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Account disabled")
 
-    access_token = create_access_token(data={"sub": user_id, "email": input_email, "role": user_role})
+    # Reset rate limiting on successful login
+    login_rate_limiter.record_success(client_ip, input_ident)
+
+    actual_email = user.get("email", input_ident) if user else input_ident
+    access_token = create_access_token(data={"sub": user_id, "email": actual_email, "role": user_role})
     
     await log_audit_event(
-        actor=input_email,
+        actor=actual_email,
         role=user_role,
         action="LOGIN_SUCCESS",
         resource="/auth/login",
@@ -92,15 +121,28 @@ async def login(credentials: UserLogin, request: Request):
     )
 
     user_out = UserOut(
-        user_id=user["user_id"],
-        email=user["email"],
-        name=user.get("name", user["email"]),
-        role=user.get("role", "INVESTIGATOR"),
-        is_active=user.get("is_active", True),
-        created_at=user.get("created_at", datetime.now(timezone.utc).isoformat())
+        user_id=user["user_id"] if user else user_id,
+        email=actual_email,
+        name=user.get("name", user_name) if user else user_name,
+        role=user.get("role", user_role) if user else user_role,
+        is_active=user.get("is_active", True) if user else True,
+        created_at=user.get("created_at", datetime.now(timezone.utc).isoformat()) if user else datetime.now(timezone.utc).isoformat()
     )
 
     return Token(access_token=access_token, token_type="bearer", user=user_out)
+
+@router.post("/logout")
+async def logout(request: Request, current_user: dict = Depends(get_current_user)):
+    client_ip = request.client.host if request.client else "unknown"
+    await log_audit_event(
+        actor=current_user.get("email", "unknown"),
+        role=current_user.get("role", "INVESTIGATOR"),
+        action="LOGOUT",
+        resource="/auth/logout",
+        ip_address=client_ip,
+        details={"user_id": current_user.get("user_id")}
+    )
+    return {"message": "Logged out successfully", "status": "LOGOUT_SUCCESS"}
 
 @router.get("/me", response_model=UserOut)
 async def get_me(current_user: dict = Depends(get_current_user)):

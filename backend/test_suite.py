@@ -61,7 +61,7 @@ async def run_tests():
         assert fail_res2.status_code == 401, f"Expected 401 on wrong password, got {fail_res2.status_code}"
         print(" Negative Test PASS: Incorrect password rejected with 401 Unauthorized")
 
-        # Positive test: Valid dynamic credentials
+        # Positive test: Valid dynamic credentials (via email)
         login_res = await ac.post("/api/v1/auth/login", json={
             "email": test_email,
             "password": test_pass
@@ -71,6 +71,27 @@ async def run_tests():
         token = auth_data["access_token"]
         headers = {"Authorization": f"Bearer {token}"}
         print(f" Positive Test PASS: Dynamic authentication successful! JWT issued for {auth_data['user']['email']}")
+
+        # Positive test 2: Valid credentials via username field
+        login_u_res = await ac.post("/api/v1/auth/login", json={
+            "username": test_email,
+            "password": test_pass
+        })
+        assert login_u_res.status_code == 200, f"Login via username field failed: {login_u_res.text}"
+        print(" Positive Test PASS: Authentication with 'username' field succeeds")
+
+        # Rate Limiting Test: repeated failed attempts trigger 429
+        rl_target = f"rl.{uuid.uuid4().hex[:6]}@tracex.invalid"
+        for _ in range(5):
+            await ac.post("/api/v1/auth/login", json={"email": rl_target, "password": "wrong"})
+        rl_res = await ac.post("/api/v1/auth/login", json={"email": rl_target, "password": "wrong"})
+        assert rl_res.status_code == 429, f"Expected 429 on rate limit trigger, got {rl_res.status_code}"
+        print(" Rate Limiting PASS: Brute-force threshold triggered HTTP 429 Too Many Requests")
+
+        # Logout Test: Calling /auth/logout with token succeeds
+        logout_res = await ac.post("/api/v1/auth/logout", headers=headers)
+        assert logout_res.status_code == 200, f"Logout failed: {logout_res.text}"
+        print(" Logout PASS: Server-side logout audit event recorded")
 
         print("\n[4/9] Testing Atomic Sequential Case Creation...")
         case_res = await ac.post("/api/v1/cases", json={
