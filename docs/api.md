@@ -12,8 +12,8 @@ Authenticates user and returns JWT bearer token.
 - **Request**:
   ```json
   {
-    "email": "admin@tracex.local",
-    "password": "TraceX@2026!"
+    "email": "investigator@yourdomain.com",
+    "password": "<YOUR_CONFIGURED_PASSWORD>"
   }
   ```
 - **Response (200 OK)**:

@@ -85,6 +85,23 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
+                    android:hint="Backend Server URL (HTTPS / HTTP)"
+                    app:boxStrokeColor="@color/primary_neon_emerald"
+                    app:hintTextColor="@color/primary_neon_emerald"
+                    android:textColorHint="@color/text_dim">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/et_server_url"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="textUri"
+                        android:textColor="@color/text_white" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
                     android:hint="Case ID"
                     app:boxStrokeColor="@color/primary_neon_emerald"
                     app:hintTextColor="@color/primary_neon_emerald"

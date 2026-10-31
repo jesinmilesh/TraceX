@@ -56,9 +56,11 @@ class DeviceRegister(BaseModel):
     android_version: str
     app_version: str = "1.0.0"
     device_id: Optional[str] = None
+    client_uuid: Optional[str] = None
 
 class DeviceOut(BaseModel):
     device_id: str
+    device_number: Optional[str] = None
     case_id: str
     device_model: str
     android_version: str

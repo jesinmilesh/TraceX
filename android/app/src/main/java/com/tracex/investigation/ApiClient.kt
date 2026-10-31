@@ -31,7 +31,10 @@ object ApiClient {
 
     data class RegistrationResult(
         val success: Boolean,
-        val message: String
+        val message: String,
+        val assignedDeviceId: String? = null,
+        val assignedDeviceNumber: String? = null,
+        val assignedCaseId: String? = null
     )
 
     data class SessionResult(
@@ -42,7 +45,8 @@ object ApiClient {
 
     suspend fun registerDevice(
         baseUrl: String,
-        deviceId: String,
+        deviceId: String? = null,
+        installationId: String,
         caseId: String,
         deviceModel: String,
         androidVersion: String
@@ -50,7 +54,8 @@ object ApiClient {
         val cleanUrl = normalizeUrl(baseUrl)
         try {
             val payload = mapOf(
-                "device_id" to deviceId.trim(),
+                "device_id" to (deviceId?.takeIf { it.isNotEmpty() } ?: "NEW"),
+                "client_uuid" to installationId.trim(),
                 "case_id" to caseId.trim(),
                 "device_model" to deviceModel,
                 "android_version" to androidVersion,
@@ -67,7 +72,26 @@ object ApiClient {
             val body = response.body?.string() ?: ""
 
             if (response.isSuccessful) {
-                RegistrationResult(true, "Device authorized & bound to Case $caseId")
+                var assignedId = deviceId
+                var assignedNum: String? = null
+                var assignedCase = caseId
+                try {
+                    val jsonObj = gson.fromJson(body, com.google.gson.JsonObject::class.java)
+                    if (jsonObj.has("device_id")) assignedId = jsonObj.get("device_id").asString
+                    if (jsonObj.has("device_number") && !jsonObj.get("device_number").isJsonNull) {
+                        assignedNum = jsonObj.get("device_number").asString
+                    }
+                    if (jsonObj.has("case_id")) assignedCase = jsonObj.get("case_id").asString
+                } catch (ignored: Exception) {}
+
+                val numSuffix = if (!assignedNum.isNullOrEmpty()) " ($assignedNum)" else ""
+                RegistrationResult(
+                    success = true,
+                    message = "Device registered as $assignedId$numSuffix",
+                    assignedDeviceId = assignedId,
+                    assignedDeviceNumber = assignedNum,
+                    assignedCaseId = assignedCase
+                )
             } else {
                 RegistrationResult(false, "Server error HTTP $code: $body")
             }

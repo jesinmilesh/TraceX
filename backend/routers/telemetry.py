@@ -24,6 +24,12 @@ def generate_msg_id(device_id: str, sender: str, date: int) -> str:
 
 @router.post("/ingest", response_model=TelemetryEventOut)
 async def ingest_telemetry(payload: TelemetryIngest, request: Request):
+    # Validate coordinate bounds strictly per GPS standard
+    if payload.latitude < -90.0 or payload.latitude > 90.0:
+        raise HTTPException(status_code=400, detail="Invalid GPS latitude: must be between -90.0 and +90.0 degrees")
+    if payload.longitude < -180.0 or payload.longitude > 180.0:
+        raise HTTPException(status_code=400, detail="Invalid GPS longitude: must be between -180.0 and +180.0 degrees")
+
     db = get_database()
 
     # Validate or fallback case existence

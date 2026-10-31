@@ -1,4 +1,4 @@
-import { api, showToast, escapeHtml } from './api.js';
+import { api, showToast, escapeHtml, API_BASE } from './api.js';
 import { getActiveCaseId } from './cases.js';
 import { isValidCoordinate, renderGoogleMapsButton, renderLocationObservationCard } from './maps.js';
 
@@ -74,7 +74,7 @@ export function renderEvidenceTable() {
             <button class="btn btn-emerald btn-sm" data-verify-id="${evId}">
               Verify SHA-256
             </button>
-            <a href="/api/v1/evidence/${evId}/download" class="btn btn-secondary btn-sm" download>
+            <a href="${API_BASE}/evidence/${evId}/download" class="btn btn-secondary btn-sm" download>
               Download
             </a>
           </div>

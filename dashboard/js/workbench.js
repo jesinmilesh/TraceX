@@ -10,7 +10,7 @@
  * - Live cryptographic verification through backend /evidence/{id}/verify.
  */
 
-import { api, showToast, escapeHtml } from './api.js';
+import { api, showToast, escapeHtml, API_BASE } from './api.js';
 import { getActiveCaseId } from './cases.js';
 import { selectGraphNode } from './graph.js';
 import { isValidCoordinate, renderGoogleMapsButton, renderLocationObservationCard } from './maps.js';
@@ -555,14 +555,14 @@ function renderContextInspector() {
       </div>
 
       <div class="inspector-prop-group">
-        <div class="inspector-prop-label">JUDICIAL WARRANT TOKEN</div>
+        <div class="inspector-prop-label">CASE IDENTIFIER</div>
         <div class="mono" style="font-size: 11px; color: var(--text-secondary); background: var(--bg-input); padding: 5px 8px; border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
-          ORD-2026-TX-8819 [AUTHORIZED]
+          ${escapeHtml(artifact.case_id || getActiveCaseId() || 'ACTIVE INQUIRY')} [AUTHORIZED]
         </div>
       </div>
 
       <div class="inspector-actions-strip" style="margin-top: 18px; display: flex; flex-direction: column; gap: 8px;">
-        <a href="/api/v1/evidence/${evId}/download" class="btn btn-secondary btn-sm" download style="width: 100%;">
+        <a href="${API_BASE}/evidence/${evId}/download" class="btn btn-secondary btn-sm" download style="width: 100%;">
           ⬇ Download Artifact File
         </a>
         <button id="wb-btn-copy-hash" class="btn btn-secondary btn-sm" style="width: 100%;">

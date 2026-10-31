@@ -20,6 +20,7 @@ from routers.evidence import router as evidence_router
 from routers.custody import router as custody_router
 from routers.audit import router as audit_router
 from routers.reports import router as reports_router
+from routers.config import router as config_router
 
 logging.basicConfig(
     level=logging.INFO,
@@ -28,30 +29,51 @@ logging.basicConfig(
 logger = logging.getLogger("tracex.main")
 
 async def ensure_baseline_admin():
-    """Ensure baseline admin account exists if no user accounts exist in the database."""
+    """Ensure baseline administrator exists using server-side environment credentials (fail-safe)."""
     db = get_database()
     if db is None:
         return
 
+    admin_username = settings.TRACEX_ADMIN_USERNAME.strip().lower()
+    admin_hash = settings.TRACEX_ADMIN_PASSWORD_HASH.strip()
+    admin_plaintext = settings.TRACEX_ADMIN_PASSWORD.strip()
+
+    if not admin_username or (not admin_hash and not admin_plaintext):
+        logger.info("[AUTH] TRACEX_ADMIN_USERNAME or TRACEX_ADMIN_PASSWORD_HASH not configured in environment. Admin baseline creation deferred (fail-safe).")
+        return
+
+    if not admin_hash and admin_plaintext:
+        admin_hash = hash_password(admin_plaintext)
+
     try:
-        user_count = await db.users.count_documents({})
-        if user_count == 0:
-            logger.info("Initializing baseline administrator account (admin@tracex.local)...")
+        existing_admin = await db.users.find_one({"email": admin_username})
+        if not existing_admin:
+            logger.info(f"Provisioning authorized administrator account ({admin_username}) from environment configuration...")
             await db.users.insert_one({
                 "user_id": "USR-ADMIN-001",
-                "email": "admin@tracex.local",
-                "password_hash": hash_password("TraceX@2026!"),
+                "email": admin_username,
+                "password_hash": admin_hash,
                 "name": "Forensic System Administrator",
                 "role": "ADMIN",
                 "is_active": True,
                 "created_at": datetime.now(timezone.utc).isoformat()
             })
+        else:
+            # Sync password hash if updated in deployment environment
+            await db.users.update_one(
+                {"email": admin_username},
+                {"$set": {"password_hash": admin_hash, "role": "ADMIN", "is_active": True}}
+            )
     except Exception as e:
         logger.warning(f"Baseline administrator verification deferred: {e}")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info(f"Starting Project TraceX Backend Engine (Environment: {settings.ENVIRONMENT})...")
+    issues = settings.validate_production_readiness()
+    if issues:
+        for issue in issues:
+            logger.warning(f"[CONFIG] Production check note: {issue}")
     try:
         await connect_to_mongo()
         await ensure_baseline_admin()
@@ -71,12 +93,14 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# CORS Security Configuration
-configured_origins = settings.ALLOWED_ORIGINS
+# CORS Security Configuration — Whitelisted from ALLOWED_ORIGINS Environment Variable
+# Strict origin isolation: never uses allow_origins=["*"]
+cors_origins = settings.ALLOWED_ORIGINS
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=configured_origins if configured_origins else ["https://tracex.local"],
+    allow_origins=cors_origins,
+    allow_origin_regex=r"^https://tracex.*\.vercel\.app$" if settings.is_production() else None,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["*"],
@@ -91,6 +115,7 @@ app.include_router(evidence_router, prefix="/api/v1")
 app.include_router(custody_router, prefix="/api/v1")
 app.include_router(audit_router, prefix="/api/v1")
 app.include_router(reports_router, prefix="/api/v1")
+app.include_router(config_router, prefix="/api/v1")
 
 # Mount Dashboard Static Files
 dashboard_dir = Path(__file__).resolve().parent.parent / "dashboard"

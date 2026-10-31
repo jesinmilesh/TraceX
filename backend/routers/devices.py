@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from typing import List, Optional
 from fastapi import APIRouter, HTTPException, Depends, Request, Query
 from database import get_database
+from pymongo import ReturnDocument
 from schemas.forensic_schemas import (
     DeviceRegister,
     DeviceOut,
@@ -35,34 +36,53 @@ def compute_effective_status(status: str, last_seen_iso: str) -> str:
 @router.post("/register", response_model=DeviceOut)
 async def register_device(device_in: DeviceRegister, request: Request):
     db = get_database()
-    req_case_id = (device_in.case_id or "CASE-2026-001").strip()
+    req_case_id = (device_in.case_id or "").strip()
+    now_iso = datetime.now(timezone.utc).isoformat()
 
-    # Verify case authorization
-    case = await db.cases.find_one({"case_id": req_case_id})
-    if not case:
-        case = await db.cases.find_one({"case_id": {"$regex": f"^{req_case_id}$", "$options": "i"}})
+    # Case association: find requested case or active case, or atomically create CASE-001
+    case = None
+    if req_case_id:
+        case = await db.cases.find_one({"case_id": req_case_id})
+        if not case:
+            case = await db.cases.find_one({"case_id": {"$regex": f"^{req_case_id}$", "$options": "i"}})
+    
     if not case:
         case = await db.cases.find_one({"status": "ACTIVE"})
         if case:
             req_case_id = case["case_id"]
         else:
-            req_case_id = "CASE-2026-001"
-            now_init = datetime.now(timezone.utc).isoformat()
+            case_counter = await db.counters.find_one_and_update(
+                {"_id": "case_sequence"},
+                {"$inc": {"sequence": 1}},
+                upsert=True,
+                return_document=ReturnDocument.AFTER
+            )
+            case_seq_str = f"{case_counter.get('sequence', 1):03d}"
+            req_case_id = f"CASE-{case_seq_str}"
+            case_number = f"TRACEX-{datetime.now(timezone.utc).year}-{case_seq_str}"
             await db.cases.insert_one({
                 "case_id": req_case_id,
-                "case_number": "TRACEX-2026-001",
+                "case_number": case_number,
                 "title": "Authorized Digital Evidence Monitoring",
                 "description": "Baseline case for authorized evidence capture and forensics.",
                 "status": "ACTIVE",
-                "created_at": now_init,
-                "updated_at": now_init
+                "created_at": now_iso,
+                "updated_at": now_iso
             })
 
-    device_id = (device_in.device_id or f"DEV-{uuid.uuid4().hex[:8].upper()}").strip()
-    now_iso = datetime.now(timezone.utc).isoformat()
+    candidate_id = (device_in.device_id or "").strip()
+    client_uuid = (device_in.client_uuid or candidate_id or "").strip()
 
-    existing = await db.devices.find_one({"device_id": device_id})
+    # Check for existing device to prevent duplicate assignment on reinstall or reconnect
+    existing = None
+    if candidate_id and candidate_id.upper() not in ["NEW", "UNREGISTERED", "NONE"]:
+        existing = await db.devices.find_one({"device_id": candidate_id})
+    if not existing and client_uuid:
+        existing = await db.devices.find_one({"client_uuid": client_uuid})
+
     if existing:
+        device_id = existing["device_id"]
+        device_number = existing.get("device_number") or device_id.replace("DEV-", "")
         update_data = {
             "case_id": req_case_id,
             "device_model": device_in.device_model,
@@ -71,11 +91,26 @@ async def register_device(device_in: DeviceRegister, request: Request):
             "last_seen": now_iso,
             "status": "ONLINE"
         }
+        if client_uuid:
+            update_data["client_uuid"] = client_uuid
         await db.devices.update_one({"device_id": device_id}, {"$set": update_data})
         doc = await db.devices.find_one({"device_id": device_id})
     else:
+        # Genuinely new device: assign server-side atomic sequential numbering (001, 002, 003...)
+        dev_counter = await db.counters.find_one_and_update(
+            {"_id": "device_sequence"},
+            {"$inc": {"sequence": 1}},
+            upsert=True,
+            return_document=ReturnDocument.AFTER
+        )
+        seq_num = dev_counter.get("sequence", 1)
+        device_number = f"{seq_num:03d}"
+        device_id = f"DEV-{device_number}"
+
         doc = {
             "device_id": device_id,
+            "device_number": device_number,
+            "client_uuid": client_uuid or device_id,
             "case_id": req_case_id,
             "device_model": device_in.device_model,
             "android_version": device_in.android_version,
@@ -97,6 +132,7 @@ async def register_device(device_in: DeviceRegister, request: Request):
         case_id=req_case_id,
         ip_address=client_ip,
         details={
+            "device_number": device_number,
             "device_model": device_in.device_model,
             "android_version": device_in.android_version,
             "app_version": device_in.app_version
@@ -107,11 +143,12 @@ async def register_device(device_in: DeviceRegister, request: Request):
         event="DEVICE_STATUS_CHANGED",
         device_id=device_id,
         case_id=req_case_id,
-        data={"status": "ONLINE", "last_seen": now_iso}
+        data={"status": "ONLINE", "last_seen": now_iso, "device_number": device_number}
     )
 
     return DeviceOut(
         device_id=doc["device_id"],
+        device_number=doc.get("device_number", device_number),
         case_id=doc["case_id"],
         device_model=doc["device_model"],
         android_version=doc["android_version"],
@@ -141,6 +178,7 @@ async def list_devices(
         result.append(
             DeviceOut(
                 device_id=d["device_id"],
+                device_number=d.get("device_number"),
                 case_id=d["case_id"],
                 device_model=d.get("device_model", "Unknown"),
                 android_version=d.get("android_version", "Android"),
@@ -164,6 +202,7 @@ async def get_device(device_id: str, current_user: dict = Depends(get_current_us
     eff_status = compute_effective_status(d.get("status", "ONLINE"), d.get("last_seen", ""))
     return DeviceOut(
         device_id=d["device_id"],
+        device_number=d.get("device_number"),
         case_id=d["case_id"],
         device_model=d.get("device_model", "Unknown"),
         android_version=d.get("android_version", "Android"),
@@ -175,6 +214,7 @@ async def get_device(device_id: str, current_user: dict = Depends(get_current_us
         network_state=d.get("network_state", "WIFI")
     )
 
+@router.get("/{device_id}/locations")
 @router.get("/{device_id}/location-history")
 async def get_device_location_history(
     device_id: str,

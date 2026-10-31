@@ -20,8 +20,7 @@ import { initEvidence, loadEvidence } from './evidence.js';
 import { initCustody, loadCustody } from './custody.js';
 import { initAudit, loadAuditLogs } from './audit.js';
 import { initReports, loadReportPreview } from './reports.js';
-import { isDemoMode, setDemoMode, DEMO_USER } from './demo.js';
-import { showToast } from './api.js';
+import { showToast, API_BASE, setApiBase, checkServerHealth } from './api.js';
 import { isValidCoordinate, renderGoogleMapsButton } from './maps.js';
 
 import { initEvidenceGraph, fitGraphToScreen, refreshGraphData, selectGraphNode } from './graph.js';
@@ -167,12 +166,41 @@ export function updateMobileHomeInfo() {
   const caseSelect = document.getElementById('global-case-select');
   const titleEl = document.getElementById('mobile-case-title');
   const idEl = document.getElementById('mobile-case-id');
+  const descEl = document.getElementById('mobile-case-desc');
+  const deviceIdEl = document.getElementById('mobile-device-id');
+  const uplinkEl = document.getElementById('mobile-uplink-status');
+
   if (caseSelect && titleEl && idEl) {
     const selectedOption = caseSelect.options[caseSelect.selectedIndex];
     if (selectedOption && selectedOption.value) {
       idEl.textContent = selectedOption.value;
       const parts = selectedOption.text.split('—');
       titleEl.textContent = parts.length > 1 ? parts.slice(1).join('—').trim() : selectedOption.text;
+      if (descEl) descEl.textContent = 'Active Forensic Inquiry';
+    } else {
+      idEl.textContent = '—';
+      titleEl.textContent = 'No Case Selected';
+      if (descEl) descEl.textContent = '—';
+    }
+  }
+
+  // Bind real enrolled device identity
+  const devices = getDevicesList();
+  if (deviceIdEl) {
+    if (devices && devices.length > 0) {
+      const d = devices[0];
+      deviceIdEl.textContent = `${d.device_model || 'Android Unit'} (${d.device_id})`;
+      if (uplinkEl) {
+        const isLive = ['ONLINE', 'COLLECTION_ACTIVE', 'ACTIVE'].includes(d.status);
+        uplinkEl.textContent = isLive ? 'ONLINE (ACTIVE UPLINK)' : 'STANDBY';
+        uplinkEl.className = isLive ? 'text-accent' : 'text-muted';
+      }
+    } else {
+      deviceIdEl.textContent = 'No Enrolled Unit';
+      if (uplinkEl) {
+        uplinkEl.textContent = 'AWAITING REGISTRATION';
+        uplinkEl.className = 'text-muted';
+      }
     }
   }
 
@@ -185,23 +213,16 @@ export function updateMobileHomeInfo() {
   }
 }
 
-function updateDemoModeUI() {
-  const active = isDemoMode();
-  const indicatorBar = document.getElementById('demo-indicator-bar');
-  const toggleBtn = document.getElementById('btn-toggle-demo');
-  const labelEl = document.getElementById('demo-toggle-label');
-
-  if (indicatorBar) {
-    indicatorBar.style.display = active ? 'inline-flex' : 'none';
-  }
-
-  if (toggleBtn && labelEl) {
-    if (active) {
-      toggleBtn.className = 'btn btn-secondary btn-sm';
-      labelEl.innerHTML = '<span class="pulse-dot warning"></span> Demo Mode: ON';
+function updateServerStatusUI(isHealthy = true) {
+  const statusLabel = document.getElementById('server-status-label');
+  const btn = document.getElementById('btn-server-config');
+  if (statusLabel && btn) {
+    if (isHealthy) {
+      statusLabel.innerHTML = '<span class="pulse-dot"></span> API Server';
+      btn.className = 'btn btn-secondary btn-sm';
     } else {
-      toggleBtn.className = 'btn btn-secondary btn-sm';
-      labelEl.innerHTML = '<span class="pulse-dot"></span> Live SOC';
+      statusLabel.innerHTML = '<span class="pulse-dot" style="background:#ef4444;"></span> Server Offline';
+      btn.className = 'btn btn-secondary btn-sm';
     }
   }
 }
@@ -361,32 +382,66 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Demo Mode Toggle Switch
-  const demoToggleBtn = document.getElementById('btn-toggle-demo');
-  if (demoToggleBtn) {
-    demoToggleBtn.addEventListener('click', () => {
-      const currentlyDemo = isDemoMode();
-      const nextMode = !currentlyDemo;
-      setDemoMode(nextMode);
+  // Server Configuration Modal
+  const serverConfigBtn = document.getElementById('btn-server-config');
+  const serverConfigModal = document.getElementById('modal-server-config');
+  const closeServerConfigBtn = document.getElementById('btn-close-server-config-modal');
+  const serverConfigForm = document.getElementById('form-server-config');
+  const serverUrlInput = document.getElementById('cfg-server-url');
+  const testConnBtn = document.getElementById('btn-test-server-connection');
+  const diagEl = document.getElementById('server-health-diagnostic');
 
-      if (nextMode) {
-        localStorage.setItem('tracex_token', 'demo-tracex-forensic-token-isolated');
-        localStorage.setItem('tracex_user', JSON.stringify(DEMO_USER));
-        showToast('Switched to Demonstration Mode (Frontend-Only Simulated Records)', 'info');
+  if (serverConfigBtn && serverConfigModal) {
+    serverConfigBtn.addEventListener('click', () => {
+      const currentUrl = localStorage.getItem('tracex_api_base_url') || (API_BASE.replace(/\/api\/v1$/, ''));
+      if (serverUrlInput) serverUrlInput.value = currentUrl;
+      if (diagEl) diagEl.style.display = 'none';
+      serverConfigModal.classList.add('active');
+    });
+  }
+
+  if (closeServerConfigBtn && serverConfigModal) {
+    closeServerConfigBtn.addEventListener('click', () => {
+      serverConfigModal.classList.remove('active');
+    });
+  }
+
+  if (testConnBtn && serverUrlInput && diagEl) {
+    testConnBtn.addEventListener('click', async () => {
+      const targetUrl = serverUrlInput.value.trim();
+      diagEl.style.display = 'block';
+      diagEl.style.background = 'rgba(255,255,255,0.05)';
+      diagEl.style.color = '#94a3b8';
+      diagEl.textContent = 'Testing connection to ' + targetUrl + '...';
+
+      const res = await checkServerHealth(targetUrl);
+      if (res.healthy) {
+        diagEl.style.background = 'rgba(16, 185, 129, 0.15)';
+        diagEl.style.color = '#10B981';
+        diagEl.textContent = `Server Online! Database Status: ${res.data.database.toUpperCase()} (${res.data.environment})`;
       } else {
-        localStorage.removeItem('tracex_token');
-        localStorage.removeItem('tracex_user');
-        showToast('Switched to Live SOC Mode (Real Backend & WebSocket)', 'info');
+        diagEl.style.background = 'rgba(239, 68, 68, 0.15)';
+        diagEl.style.color = '#EF4444';
+        diagEl.textContent = `Connection Failed: ${res.error || 'Server unreachable'}`;
       }
+    });
+  }
 
-      updateDemoModeUI();
+  if (serverConfigForm && serverUrlInput && serverConfigModal) {
+    serverConfigForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const newUrl = serverUrlInput.value.trim();
+      setApiBase(newUrl);
+      serverConfigModal.classList.remove('active');
+      showToast('Backend Server updated to ' + newUrl, 'success');
       initWebSocket();
       initDashboardData();
     });
   }
 
-  window.addEventListener('demo:toggle', () => {
-    updateDemoModeUI();
+  // Initial Health Check
+  checkServerHealth().then(res => {
+    updateServerStatusUI(res.healthy);
   });
 
   // Data update events -> refresh subviews
@@ -404,8 +459,10 @@ document.addEventListener('DOMContentLoaded', () => {
   window.addEventListener('custody:updated', () => {
     refreshGraphData();
   });
-
-  updateDemoModeUI();
+  window.addEventListener('tracex:api-base-changed', () => {
+    initWebSocket();
+    initDashboardData();
+  });
 
   // Initialize Core Modules & Auth
   initAuth(() => {

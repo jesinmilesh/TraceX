@@ -85,8 +85,8 @@ The APK is already compiled and ready for transfer and installation:
    http://localhost:8000/
    ```
 2. Log into the SOC Dashboard:
-   - **Email**: `admin@tracex.local`
-   - **Password**: `TraceX@2026!`
+   - **Email**: `<YOUR_CONFIGURED_ADMIN_USERNAME>`
+   - **Password**: `<YOUR_CONFIGURED_ADMIN_PASSWORD>`
 3. Navigate to:
    - **Enrolled Devices**: Your mobile phone (`DEV-...`) will show as **ACTIVE** with its device model, Android OS version, and battery percentage.
    - **Live Telemetry Stream**: Incoming telemetry coordinates and SHA-256 evidence hashes appear automatically via WebSocket in real-time without refreshing the page!

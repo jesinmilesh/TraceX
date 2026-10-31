@@ -85,8 +85,8 @@ export function renderCasesTable() {
     const title = escapeHtml(c.title || 'Untitled Case');
     const desc = escapeHtml(c.description || 'No judicial description provided');
     const status = escapeHtml(c.status || 'OPEN');
-    const investigator = escapeHtml(c.investigator || c.lead_investigator || 'Special Agent Vance');
-    const devCount = Number(c.device_count || 1);
+    const investigator = escapeHtml(c.investigator || c.lead_investigator || 'Unassigned');
+    const devCount = Number(c.device_count || 0);
     const evCount = Number(c.evidence_count || 0);
     const isCurrentActive = (c.case_id === getActiveCaseId());
 

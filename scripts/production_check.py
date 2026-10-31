@@ -25,7 +25,9 @@ EXCLUDE_FILES = {
     "production_check.py",
     "cleanup_demo_data.py",
     ".gitignore",
-    ".env.example"
+    ".env.example",
+    ".env",
+    ".env.local"
 }
 
 # Critical production rules
@@ -87,7 +89,7 @@ def main():
         "No sample initialization": True,
         "No duplicate API configuration": True,
         "Environment variables configured": (ROOT_DIR / "backend" / ".env.example").exists(),
-        "Android production endpoint configured": (ROOT_DIR / "android" / "app" / "build.gradle.kts").exists(),
+        "Android production endpoint configured": (ROOT_DIR / "android" / "app" / "build.gradle").exists() or (ROOT_DIR / "android" / "app" / "build.gradle.kts").exists(),
         "Debug logging disabled": True,
         "Production security configuration enabled": True
     }

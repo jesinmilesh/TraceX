@@ -2,6 +2,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import List
 from fastapi import APIRouter, HTTPException, Depends, Request
+from pymongo import ReturnDocument
 from database import get_database
 from schemas.forensic_schemas import CaseCreate, CaseUpdate, CaseOut
 from services.auth_service import get_current_user, require_roles
@@ -16,9 +17,23 @@ async def create_case(
     current_user: dict = Depends(require_roles(["ADMIN", "INVESTIGATOR"]))
 ):
     db = get_database()
-    case_id = f"CASE-{uuid.uuid4().hex[:8].upper()}"
-    case_number = f"TRACEX-{datetime.now(timezone.utc).year}-{uuid.uuid4().hex[:4].upper()}"
     now_iso = datetime.now(timezone.utc).isoformat()
+
+    # Server-side atomic sequential case assignment (CASE-001, CASE-002...) with collision avoidance
+    while True:
+        case_counter = await db.counters.find_one_and_update(
+            {"_id": "case_sequence"},
+            {"$inc": {"sequence": 1}},
+            upsert=True,
+            return_document=ReturnDocument.AFTER
+        )
+        seq_num = case_counter.get("sequence", 1)
+        case_seq_str = f"{seq_num:03d}"
+        case_id = f"CASE-{case_seq_str}"
+        case_number = f"TRACEX-{datetime.now(timezone.utc).year}-{case_seq_str}"
+        existing_case = await db.cases.find_one({"$or": [{"case_id": case_id}, {"case_number": case_number}]})
+        if not existing_case:
+            break
 
     doc = {
         "case_id": case_id,

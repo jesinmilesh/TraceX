@@ -12,9 +12,8 @@
  * - Complete XSS escaping on all dynamic DOM injections.
  */
 
-import { api, showToast, escapeHtml } from './api.js';
+import { api, showToast, escapeHtml, API_BASE } from './api.js';
 import { getActiveCaseId } from './cases.js';
-import { isDemoMode } from './demo.js';
 import { isValidCoordinate, renderGoogleMapsButton, renderLocationObservationCard } from './maps.js';
 
 let telemetryEvents = [];
@@ -33,14 +32,24 @@ const MAX_RECONNECT_ATTEMPTS = 5;
 const BASE_RECONNECT_DELAY_MS = 2000;
 const MAX_RECONNECT_DELAY_MS = 30000;
 
-// Google Maps Integration Key
-export const GOOGLE_MAPS_API_KEY = window.GOOGLE_MAPS_API_KEY || 'AIzaSyDvDVIzNujFysbBBBNm3tuPBi5Mc83FQ5A';
+// Runtime Map State
+let googleMap = null;
+let googleMarkers = {};
+let googlePolylines = {};
+let googleFixMarkers = {};
+let googleInfoWindows = {};
+let hasAutoCenteredByDevice = {};
+let isPathVisible = true;
+let isGoogleMapsLoaded = false;
+let mapsLoadingPromise = null;
+let activeMapProvider = 'google_maps';
 
-// Leaflet Map State
+// Leaflet Fallback State
 let leafletMap = null;
 let deviceMarkers = {};
 let devicePolylines = {};
 let deviceTracks = {};
+
 let selectedDeviceId = null;
 let activeTimeRange = 'live';
 let currentMapContainerId = null;
@@ -59,9 +68,7 @@ export async function loadTelemetryHistory() {
     updateMapData();
     window.dispatchEvent(new CustomEvent('telemetry:updated', { detail: { telemetryEvents } }));
   } catch (err) {
-    if (!isDemoMode()) {
-      console.warn('Telemetry history load deferred (backend offline or awaiting records):', err.message);
-    }
+    console.warn('Telemetry history load deferred (backend offline or awaiting records):', err.message);
   }
 
   // Load associated communications evidence
@@ -79,9 +86,7 @@ export async function loadCallLogs() {
     renderCallLogs();
     renderOverviewRecentEvents();
   } catch (err) {
-    if (!isDemoMode()) {
-      console.warn('Call logs load deferred:', err.message);
-    }
+    console.warn('Call logs load deferred:', err.message);
   }
 }
 
@@ -95,9 +100,7 @@ export async function loadMessages() {
     renderMessages();
     renderOverviewRecentEvents();
   } catch (err) {
-    if (!isDemoMode()) {
-      console.warn('Messages load deferred:', err.message);
-    }
+    console.warn('Messages load deferred:', err.message);
   }
 }
 
@@ -314,12 +317,12 @@ export function updateOverviewDeviceSummary() {
   }
 
   const speedKmH = ((latest.speed || 0) * 3.6);
-  const battery = latest.battery || latest.battery_level || 84;
+  const battery = latest.battery !== undefined ? latest.battery : (latest.battery_level !== undefined ? latest.battery_level : '—');
 
   container.innerHTML = `
     <div class="device-summary-item">
       <span class="device-summary-label">Target Device</span>
-      <span class="device-summary-val mono text-cyan">${escapeHtml(latest.device_id || 'DEV-ANDROID-01')}</span>
+      <span class="device-summary-val mono text-cyan">${escapeHtml(latest.device_id || '—')}</span>
     </div>
     <div class="device-summary-item">
       <span class="device-summary-label">Status</span>
@@ -338,27 +341,158 @@ export function updateOverviewDeviceSummary() {
     </div>
     <div class="device-summary-item">
       <span class="device-summary-label">Battery Level</span>
-      <span class="device-summary-val ${battery < 20 ? 'text-rose' : 'text-emerald'}">${Number(battery)}%</span>
+      <span class="device-summary-val ${battery < 20 ? 'text-rose' : 'text-emerald'}">${battery !== '—' ? `${Number(battery)}%` : '—'}</span>
     </div>
   `;
 }
 
 // ----------------- LEAFLET FORENSIC MAP -----------------
 
-export function initLeafletMap(containerId = 'live-map-canvas') {
+// ----------------- GOOGLE MAPS FORENSIC ENGINE -----------------
+
+export async function loadGoogleMapsScript() {
+  if (window.google && window.google.maps) {
+    isGoogleMapsLoaded = true;
+    return true;
+  }
+  if (mapsLoadingPromise) {
+    return mapsLoadingPromise;
+  }
+
+  mapsLoadingPromise = (async () => {
+    let key = '';
+
+    // 1. Check window config or local storage override
+    if (window.__TRACEX_CONFIG__ && window.__TRACEX_CONFIG__.GOOGLE_MAPS_API_KEY) {
+      key = window.__TRACEX_CONFIG__.GOOGLE_MAPS_API_KEY.trim();
+    } else if (typeof localStorage !== 'undefined' && localStorage.getItem('tracex_maps_key')) {
+      key = localStorage.getItem('tracex_maps_key').trim();
+    }
+
+    // 2. Fetch from secure server configuration endpoint
+    if (!key) {
+      try {
+        const cfg = await api.get('/config/maps');
+        if (cfg && cfg.google_maps_api_key) {
+          key = cfg.google_maps_api_key.trim();
+        }
+      } catch (err) {
+        console.warn('Backend maps configuration query deferred:', err.message);
+      }
+    }
+
+    if (!key) {
+      console.warn('GOOGLE_MAPS_API_KEY is not configured in Vercel or environment.');
+      return false;
+    }
+
+    return new Promise((resolve) => {
+      const existingScript = document.querySelector('script[src*="maps.googleapis.com"]');
+      if (existingScript) {
+        if (window.google && window.google.maps) {
+          isGoogleMapsLoaded = true;
+          return resolve(true);
+        }
+        existingScript.addEventListener('load', () => {
+          isGoogleMapsLoaded = true;
+          resolve(true);
+        });
+        existingScript.addEventListener('error', () => resolve(false));
+        return;
+      }
+
+      const script = document.createElement('script');
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(key)}&libraries=geometry,places`;
+      script.async = true;
+      script.defer = true;
+      script.onload = () => {
+        isGoogleMapsLoaded = true;
+        resolve(true);
+      };
+      script.onerror = () => {
+        console.error('Failed to load Google Maps script. Check domain restrictions, HTTP referrer, or API key.');
+        resolve(false);
+      };
+      document.head.appendChild(script);
+    });
+  })();
+
+  return mapsLoadingPromise;
+}
+
+export async function initMap(containerId = 'live-map-canvas') {
   const container = document.getElementById(containerId);
   if (!container) return;
+  currentMapContainerId = containerId;
 
-  if (!window.L) {
-    container.innerHTML = `
-      <div style="display:flex; height:100%; align-items:center; justify-content:center; flex-direction:column; color:var(--text-muted); font-size:12px; gap:6px; padding:20px; text-align:center;">
-        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-        <div>Leaflet map library unavailable or blocked by network.</div>
-        <div class="mono" style="font-size: 11px;">Coordinates and trail data remain active in Telemetry Feed.</div>
-      </div>
-    `;
+  const mapsAvailable = await loadGoogleMapsScript();
+
+  if (mapsAvailable && window.google && window.google.maps) {
+    activeMapProvider = 'google_maps';
+    initGoogleMap(containerId);
+  } else if (window.L) {
+    activeMapProvider = 'leaflet';
+    initLeafletFallback(containerId);
+  } else {
+    renderMapUnconfiguredState(container);
+  }
+
+  setupMapControls();
+  renderMapDevicesList();
+}
+
+// Backwards compatibility alias for app.js
+export const initLeafletMap = initMap;
+
+function initGoogleMap(containerId) {
+  const container = document.getElementById(containerId);
+  if (!container || !window.google || !window.google.maps) return;
+
+  if (googleMap && currentMapContainerId === containerId) {
+    try {
+      google.maps.event.trigger(googleMap, 'resize');
+      updateMapData();
+    } catch (e) {}
     return;
   }
+
+  container.innerHTML = '';
+  googleMarkers = {};
+  googlePolylines = {};
+  googleFixMarkers = {};
+  googleInfoWindows = {};
+
+  const mapOptions = {
+    zoom: 14,
+    center: { lat: 37.7749, lng: -122.4194 },
+    mapTypeId: google.maps.MapTypeId.HYBRID,
+    gestureHandling: 'greedy',
+    fullscreenControl: true,
+    mapTypeControl: true,
+    mapTypeControlOptions: {
+      style: google.maps.MapTypeControlStyle.DROPDOWN_MENU,
+      position: google.maps.ControlPosition.TOP_RIGHT
+    },
+    streetViewControl: false,
+    zoomControl: true,
+    zoomControlOptions: {
+      position: google.maps.ControlPosition.RIGHT_CENTER
+    }
+  };
+
+  googleMap = new google.maps.Map(container, mapOptions);
+
+  setTimeout(() => {
+    if (googleMap) {
+      google.maps.event.trigger(googleMap, 'resize');
+      updateMapData();
+    }
+  }, 100);
+}
+
+function initLeafletFallback(containerId) {
+  const container = document.getElementById(containerId);
+  if (!container || !window.L) return;
 
   if (leafletMap && currentMapContainerId === containerId) {
     try {
@@ -369,130 +503,196 @@ export function initLeafletMap(containerId = 'live-map-canvas') {
   }
 
   if (leafletMap) {
-    leafletMap.remove();
+    try { leafletMap.remove(); } catch (e) {}
     leafletMap = null;
     deviceMarkers = {};
     devicePolylines = {};
     deviceTracks = {};
   }
 
-  currentMapContainerId = containerId;
+  container.innerHTML = '';
 
-  try {
-    // Initialize Leaflet map instance
-    leafletMap = window.L.map(containerId, {
-      zoomControl: true,
-      attributionControl: false
-    }).setView([37.7749, -122.4194], 13);
+  leafletMap = window.L.map(containerId, {
+    zoomControl: true,
+    attributionControl: false
+  }).setView([37.7749, -122.4194], 13);
 
-    // Google Maps API Key
-    const googleApiKey = window.GOOGLE_MAPS_API_KEY || GOOGLE_MAPS_API_KEY;
+  const cartoDark = window.L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    subdomains: 'abcd',
+    attribution: '&copy; CARTO &copy; OpenStreetMap'
+  });
+  cartoDark.addTo(leafletMap);
 
-    // 1. Google Maps Base Layers (Roadmap, Satellite, Hybrid, Terrain)
-    const googleRoadmap = window.L.tileLayer(
-      `https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}&key=${googleApiKey}`,
-      {
-        maxZoom: 21,
-        subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
-        attribution: '&copy; <a href="https://maps.google.com" target="_blank" style="color: #60A5FA;">Google Maps</a>'
-      }
-    );
+  setTimeout(() => {
+    if (leafletMap) {
+      leafletMap.invalidateSize();
+      updateMapData();
+    }
+  }, 100);
+}
 
-    const googleHybrid = window.L.tileLayer(
-      `https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}&key=${googleApiKey}`,
-      {
-        maxZoom: 21,
-        subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
-        attribution: '&copy; <a href="https://maps.google.com" target="_blank" style="color: #60A5FA;">Google Maps</a>'
-      }
-    );
-
-    const googleSatellite = window.L.tileLayer(
-      `https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}&key=${googleApiKey}`,
-      {
-        maxZoom: 21,
-        subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
-        attribution: '&copy; <a href="https://maps.google.com" target="_blank" style="color: #60A5FA;">Google Maps</a>'
-      }
-    );
-
-    const googleTerrain = window.L.tileLayer(
-      `https://{s}.google.com/vt/lyrs=p&x={x}&y={y}&z={z}&key=${googleApiKey}`,
-      {
-        maxZoom: 21,
-        subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
-        attribution: '&copy; <a href="https://maps.google.com" target="_blank" style="color: #60A5FA;">Google Maps</a>'
-      }
-    );
-
-    // 2. Forensic Jet Dark (CartoDB) & Fallback OSM
-    const cartoDark = window.L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      subdomains: 'abcd',
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions" target="_blank">CARTO</a>'
-    });
-
-    const osmStandard = window.L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors'
-    });
-
-    const cartoLight = window.L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      subdomains: 'abcd',
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions" target="_blank">CARTO</a>'
-    });
-
-    // Graceful tile error handler
-    const fallbackToOsm = function (error, tile) {
-      if (tile && error && error.coords) {
-        tile.src = `https://tile.openstreetmap.org/${error.coords.z}/${error.coords.x}/${error.coords.y}.png`;
-      }
-    };
-    googleHybrid.on('tileerror', fallbackToOsm);
-    googleRoadmap.on('tileerror', fallbackToOsm);
-    cartoDark.on('tileerror', fallbackToOsm);
-
-    // Set Google Maps Hybrid as default primary view (or Forensic Jet Dark via switch)
-    googleHybrid.addTo(leafletMap);
-
-    // Layer Controls
-    const baseLayers = {
-      'Google Maps (Hybrid)': googleHybrid,
-      'Google Maps (Roadmap)': googleRoadmap,
-      'Google Maps (Satellite)': googleSatellite,
-      'Google Maps (Terrain)': googleTerrain,
-      'Forensic Jet Dark (CartoDB)': cartoDark,
-      'OpenStreetMap Standard': osmStandard
-    };
-    window.L.control.layers(baseLayers, null, { position: 'topright' }).addTo(leafletMap);
-
-    // Map attribution
-    window.L.control.attribution({ position: 'bottomright' })
-      .addAttribution('&copy; <a href="https://maps.google.com" target="_blank" style="color: #60A5FA;">Google Maps</a> &copy; <a href="https://carto.com" target="_blank" style="color: #60A5FA;">CARTO</a>')
-      .addTo(leafletMap);
-
-    setTimeout(() => {
-      if (leafletMap) {
-        leafletMap.invalidateSize();
-        updateMapData();
-      }
-    }, 100);
-  } catch (err) {
-    console.warn('Map initialization deferred:', err);
-  }
+function renderMapUnconfiguredState(container) {
+  container.innerHTML = `
+    <div style="display:flex; height:100%; align-items:center; justify-content:center; flex-direction:column; color:var(--text-muted); font-size:12px; gap:8px; padding:24px; text-align:center;">
+      <svg width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg>
+      <div style="font-weight: 700; font-size: 13.5px; color: var(--text-primary);">Google Maps Configuration Required</div>
+      <div style="max-width: 380px; line-height: 1.5;">
+        Configure <code style="color: var(--color-cyan);">GOOGLE_MAPS_API_KEY</code> in Vercel Environment Variables to activate production satellite, hybrid, and real-time movement tracking.
+      </div>
+      <div class="mono text-muted" style="font-size: 11px;">Coordinates and cryptographic evidence remain active in Telemetry Feed.</div>
+    </div>
+  `;
 }
 
 export function updateMapData(customEvents = null) {
   const events = customEvents || telemetryEvents;
-  if (!leafletMap || !window.L || events.length === 0) return;
 
-  // Group chronological coordinates by device
+  if (activeMapProvider === 'google_maps' && googleMap && window.google && window.google.maps) {
+    updateGoogleMapData(events);
+  } else if (leafletMap && window.L) {
+    updateLeafletMapData(events);
+  }
+
+  updateLiveStatusIndicators();
+  renderMapDevicesList();
+}
+
+function updateGoogleMapData(events) {
+  if (!googleMap || !window.google || !window.google.maps) return;
+
+  if (!events || events.length === 0) {
+    Object.values(googleMarkers).forEach(m => m.setMap(null));
+    Object.values(googlePolylines).forEach(p => p.setMap(null));
+    googleMarkers = {};
+    googlePolylines = {};
+    return;
+  }
+
   const eventsByDevice = {};
   for (let i = events.length - 1; i >= 0; i--) {
     const e = events[i];
     const devId = e.device_id;
-    if (!devId || !e.latitude || !e.longitude) continue;
+    if (!devId || !isValidCoordinate(e.latitude, e.longitude)) continue;
+    if (!eventsByDevice[devId]) eventsByDevice[devId] = [];
+    eventsByDevice[devId].push(e);
+  }
+
+  const bounds = new google.maps.LatLngBounds();
+  let validCoordsCount = 0;
+
+  Object.entries(eventsByDevice).forEach(([devId, devEvents]) => {
+    const path = devEvents.map(e => new google.maps.LatLng(Number(e.latitude), Number(e.longitude)));
+    const latestEvent = devEvents[devEvents.length - 1];
+    const latestPos = new google.maps.LatLng(Number(latestEvent.latitude), Number(latestEvent.longitude));
+
+    path.forEach(pt => {
+      bounds.extend(pt);
+      validCoordsCount++;
+    });
+
+    // 1. Google Maps Movement Polyline Path
+    if (!googlePolylines[devId]) {
+      googlePolylines[devId] = new google.maps.Polyline({
+        path: path,
+        geodesic: true,
+        strokeColor: devId === selectedDeviceId ? '#00E5FF' : '#00A6FF',
+        strokeOpacity: 0.9,
+        strokeWeight: 3.5,
+        map: isPathVisible ? googleMap : null
+      });
+    } else {
+      googlePolylines[devId].setPath(path);
+      googlePolylines[devId].setMap(isPathVisible ? googleMap : null);
+    }
+
+    // 2. Custom Device Marker & Forensic Popup
+    const speedKmH = ((latestEvent.speed || 0) * 3.6).toFixed(1);
+    const accuracy = (latestEvent.accuracy || 0).toFixed(1);
+    const timeStr = latestEvent.timestamp ? new Date(latestEvent.timestamp).toLocaleTimeString() : (latestEvent.received_at ? new Date(latestEvent.received_at).toLocaleTimeString() : 'Just now');
+
+    const popupHtml = `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #0F172A; padding: 6px 8px; min-width: 220px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #E2E8F0; padding-bottom: 5px; margin-bottom: 6px;">
+          <strong style="color: #0284C7; font-size: 13px;">${escapeHtml(devId)}</strong>
+          <span style="font-size: 10px; font-weight: 700; background: #DCFCE7; color: #166534; padding: 2px 6px; border-radius: 4px;">ONLINE</span>
+        </div>
+        <div style="font-size: 11px; color: #475569; margin-bottom: 2px;">
+          Case: <strong>${escapeHtml(latestEvent.case_id || 'N/A')}</strong>
+        </div>
+        <div style="font-size: 10.5px; color: #64748B; margin-bottom: 5px;">
+          Last Update: <strong>${escapeHtml(timeStr)}</strong>
+        </div>
+        <div style="font-family: monospace; font-size: 11px; font-weight: 600; background: #F1F5F9; padding: 4px 6px; border-radius: 4px; color: #1E293B; margin-bottom: 5px;">
+          ${Number(latestEvent.latitude).toFixed(6)}, ${Number(latestEvent.longitude).toFixed(6)}
+        </div>
+        <div style="font-size: 10.5px; color: #0284C7; margin-bottom: 8px;">
+          Speed: <strong>${speedKmH} km/h</strong> • Accuracy: <strong>±${accuracy} m</strong>
+        </div>
+        <div>
+          <a href="https://www.google.com/maps/search/?api=1&query=${latestEvent.latitude},${latestEvent.longitude}" target="_blank" rel="noopener noreferrer" style="display: inline-block; background: #0284C7; color: #FFF; font-size: 10.5px; font-weight: 600; padding: 4px 9px; border-radius: 4px; text-decoration: none;">
+            Open in Google Maps ↗
+          </a>
+        </div>
+      </div>
+    `;
+
+    if (!googleInfoWindows[devId]) {
+      googleInfoWindows[devId] = new google.maps.InfoWindow({ content: popupHtml });
+    } else {
+      googleInfoWindows[devId].setContent(popupHtml);
+    }
+
+    const pinSvg = {
+      path: 'M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z',
+      fillColor: devId === selectedDeviceId ? '#39FFB8' : '#00A6FF',
+      fillOpacity: 1,
+      strokeWeight: 1.5,
+      strokeColor: '#FFFFFF',
+      scale: 1.6,
+      anchor: new google.maps.Point(12, 22)
+    };
+
+    if (!googleMarkers[devId]) {
+      const marker = new google.maps.Marker({
+        position: latestPos,
+        map: googleMap,
+        title: `${devId} (Case: ${latestEvent.case_id})`,
+        icon: pinSvg,
+        animation: google.maps.Animation.DROP
+      });
+
+      marker.addListener('click', () => {
+        selectDeviceOnMap(devId);
+        googleInfoWindows[devId].open(googleMap, marker);
+      });
+
+      googleMarkers[devId] = marker;
+    } else {
+      googleMarkers[devId].setPosition(latestPos);
+      googleMarkers[devId].setIcon(pinSvg);
+    }
+
+    // Auto-center on first valid location fix only
+    if (!hasAutoCenteredByDevice[devId]) {
+      googleMap.panTo(latestPos);
+      hasAutoCenteredByDevice[devId] = true;
+    }
+  });
+
+  if (validCoordsCount > 1 && !selectedDeviceId) {
+    googleMap.fitBounds(bounds);
+  }
+}
+
+function updateLeafletMapData(events) {
+  if (!leafletMap || !window.L || !events || events.length === 0) return;
+
+  const eventsByDevice = {};
+  for (let i = events.length - 1; i >= 0; i--) {
+    const e = events[i];
+    const devId = e.device_id;
+    if (!devId || !isValidCoordinate(e.latitude, e.longitude)) continue;
     if (!eventsByDevice[devId]) eventsByDevice[devId] = [];
     eventsByDevice[devId].push(e);
   }
@@ -506,58 +706,18 @@ export function updateMapData(customEvents = null) {
 
     deviceTracks[devId] = latLngs;
 
-    // 1. Draw Directional Movement Polyline Trail in Electric Blue
     if (!devicePolylines[devId]) {
       devicePolylines[devId] = window.L.polyline(latLngs, {
         color: '#00A6FF',
-        weight: 2.5,
-        opacity: 0.85,
-        smoothFactor: 1
+        weight: 3,
+        opacity: 0.85
       }).addTo(leafletMap);
     } else {
       devicePolylines[devId].setLatLngs(latLngs);
+      if (isPathVisible) devicePolylines[devId].addTo(leafletMap);
+      else devicePolylines[devId].remove();
     }
 
-    // 1b. Distinct Recorded GPS Observation Fixes (Distinguished from interpolated line)
-    if (!deviceTracks[devId + '_markers']) deviceTracks[devId + '_markers'] = [];
-    deviceTracks[devId + '_markers'].forEach(m => m.remove());
-    deviceTracks[devId + '_markers'] = [];
-
-    devEvents.forEach((ev, idx) => {
-      const fixTime = ev.timestamp ? new Date(ev.timestamp).toLocaleString() : `#${idx+1}`;
-      const circle = window.L.circleMarker([ev.latitude, ev.longitude], {
-        radius: 4,
-        fillColor: '#0D1424',
-        color: '#00A6FF',
-        weight: 1.5,
-        fillOpacity: 0.95
-      }).bindTooltip(`Fix #${idx+1} [${fixTime}] ±${(ev.accuracy || 4.2).toFixed(1)}m`, {
-        direction: 'top',
-        className: 'mono'
-      }).addTo(leafletMap);
-
-      // Interactive popup with Google Maps action for each recorded observation
-      const fixPopup = `
-        <div style="font-family: var(--font-sans); color: #F1F5F9; padding: 6px; min-width: 185px;">
-          <div style="font-size: 11px; font-weight: 700; color: #00A6FF;">GPS FIX #${idx + 1} — ${escapeHtml(devId)}</div>
-          <div style="font-size: 10px; color: #94A3B8; margin-top: 2px;">Recorded: ${escapeHtml(fixTime)}</div>
-          <div style="margin-top: 6px; font-family: var(--font-mono); font-size: 11px; font-weight: 700;">
-            ${Number(ev.latitude).toFixed(6)}, ${Number(ev.longitude).toFixed(6)}
-          </div>
-          <div style="font-size: 10px; color: #60A5FA; margin-top: 2px;">
-            Accuracy: ±${(ev.accuracy || 4.2).toFixed(1)}m
-          </div>
-          <div style="margin-top: 8px;">
-            ${renderGoogleMapsButton(ev.latitude, ev.longitude, 'View in Google Maps ↗', 'btn-xs')}
-          </div>
-        </div>
-      `;
-      circle.bindPopup(fixPopup);
-
-      deviceTracks[devId + '_markers'].push(circle);
-    });
-
-    // 2. Custom Pulsing Device Marker
     const markerHtml = `
       <div class="tracex-marker-pin">
         <div class="pulse-ring" style="border-color: #00A6FF;"></div>
@@ -575,15 +735,11 @@ export function updateMapData(customEvents = null) {
       <div style="font-family: var(--font-sans); color: #F1F5F9; padding: 6px; min-width: 195px;">
         <div style="font-size: 13px; font-weight: 700; color: #00A6FF;">${escapeHtml(devId)}</div>
         <div style="font-size: 10.5px; color: #94A3B8; margin-top: 2px;">Case: ${escapeHtml(latestEvent.case_id || 'N/A')}</div>
-        <div style="font-size: 10px; color: #94A3B8; margin-top: 1px;">Recorded: ${latestEvent.timestamp ? new Date(latestEvent.timestamp).toLocaleString() : 'N/A'}</div>
         <div style="margin-top: 6px; font-family: var(--font-mono); font-size: 11.5px; font-weight: 700;">
           ${Number(latestEvent.latitude || 0).toFixed(6)}, ${Number(latestEvent.longitude || 0).toFixed(6)}
         </div>
         <div style="margin-top: 4px; font-size: 10.5px; color: #60A5FA;">
           Speed: ${((latestEvent.speed || 0) * 3.6).toFixed(1)} km/h • ±${(latestEvent.accuracy || 0).toFixed(1)}m
-        </div>
-        <div style="margin-top: 10px; display: flex; gap: 6px;">
-          ${renderGoogleMapsButton(latestEvent.latitude, latestEvent.longitude, 'View in Google Maps ↗', 'btn-xs')}
         </div>
       </div>
     `;
@@ -593,10 +749,7 @@ export function updateMapData(customEvents = null) {
         .addTo(leafletMap)
         .bindPopup(popupContent);
 
-      marker.on('click', () => {
-        selectDeviceOnMap(devId);
-      });
-
+      marker.on('click', () => selectDeviceOnMap(devId));
       deviceMarkers[devId] = marker;
     } else {
       deviceMarkers[devId].setLatLng([latestEvent.latitude, latestEvent.longitude]);
@@ -609,54 +762,192 @@ export function updateMapData(customEvents = null) {
       leafletMap.fitBounds(bounds, { padding: [35, 35], maxZoom: 15 });
     } catch (e) {}
   }
-
-  updateLiveStatusIndicators();
-}
-
-export function scrubMapTimeline(ratio) {
-  if (!leafletMap || telemetryEvents.length === 0) return;
-  const total = telemetryEvents.length;
-  const index = Math.max(0, Math.min(total - 1, Math.round(ratio * (total - 1))));
-  const targetEvent = telemetryEvents[index];
-  if (targetEvent && isValidCoordinate(targetEvent.latitude, targetEvent.longitude)) {
-    leafletMap.panTo([targetEvent.latitude, targetEvent.longitude], { animate: true });
-    const timeLabel = document.getElementById('map-scrubber-time');
-    if (timeLabel) {
-      const timeStr = targetEvent.timestamp ? new Date(targetEvent.timestamp).toLocaleTimeString() : `Fix #${index + 1}`;
-      timeLabel.innerHTML = `
-        <span style="display:inline-flex; align-items:center; gap:6px;">
-          <span>${timeStr} (${Number(targetEvent.latitude).toFixed(4)}, ${Number(targetEvent.longitude).toFixed(4)})</span>
-          ${renderGoogleMapsButton(targetEvent.latitude, targetEvent.longitude, 'Maps ↗', 'btn-xs')}
-        </span>
-      `;
-    }
-  }
 }
 
 export function selectDeviceOnMap(deviceId) {
   selectedDeviceId = deviceId;
-  const marker = deviceMarkers[deviceId];
-  if (marker && leafletMap) {
-    const latLng = marker.getLatLng();
-    leafletMap.setView(latLng, 15, { animate: true });
+
+  if (activeMapProvider === 'google_maps' && googleMap && googleMarkers[deviceId]) {
+    const marker = googleMarkers[deviceId];
+    googleMap.panTo(marker.getPosition());
+    googleMap.setZoom(16);
+    if (googleInfoWindows[deviceId]) {
+      googleInfoWindows[deviceId].open(googleMap, marker);
+    }
+
+    Object.entries(googlePolylines).forEach(([id, poly]) => {
+      poly.setOptions({
+        strokeColor: id === deviceId ? '#00E5FF' : '#334155',
+        strokeWeight: id === deviceId ? 4 : 2,
+        strokeOpacity: id === deviceId ? 1.0 : 0.4
+      });
+    });
+  } else if (leafletMap && deviceMarkers[deviceId]) {
+    const marker = deviceMarkers[deviceId];
+    leafletMap.setView(marker.getLatLng(), 15, { animate: true });
     marker.openPopup();
   }
 
   document.querySelectorAll('.map-device-item').forEach(el => {
-    if (el.getAttribute('data-device-id') === deviceId) {
-      el.classList.add('active');
-    } else {
-      el.classList.remove('active');
-    }
+    el.classList.toggle('active', el.getAttribute('data-device-id') === deviceId);
   });
 
   updateLiveStatusIndicators();
 }
 
-export function clearMapVisualTrail() {
-  Object.values(devicePolylines).forEach(p => p.setLatLngs([]));
-  showToast('Visual trail cleared for current view (evidence records preserved).', 'info');
+export function locateSelectedDevice() {
+  const targetId = selectedDeviceId || (telemetryEvents[0] && telemetryEvents[0].device_id);
+  if (!targetId) {
+    showToast('No active mobile device selected to locate.', 'warning');
+    return;
+  }
+  selectDeviceOnMap(targetId);
+  showToast(`Centered map on device ${targetId}`, 'info');
 }
+
+export function fitMapTrail() {
+  if (activeMapProvider === 'google_maps' && googleMap) {
+    const bounds = new google.maps.LatLngBounds();
+    let count = 0;
+    telemetryEvents.forEach(e => {
+      if ((!selectedDeviceId || e.device_id === selectedDeviceId) && isValidCoordinate(e.latitude, e.longitude)) {
+        bounds.extend(new google.maps.LatLng(Number(e.latitude), Number(e.longitude)));
+        count++;
+      }
+    });
+    if (count > 0) {
+      googleMap.fitBounds(bounds);
+      showToast(`Fit map to ${count} location fixes`, 'info');
+    }
+  } else if (leafletMap) {
+    const pts = [];
+    telemetryEvents.forEach(e => {
+      if ((!selectedDeviceId || e.device_id === selectedDeviceId) && isValidCoordinate(e.latitude, e.longitude)) {
+        pts.push([e.latitude, e.longitude]);
+      }
+    });
+    if (pts.length > 0) {
+      leafletMap.fitBounds(pts, { padding: [35, 35] });
+      showToast(`Fit map to ${pts.length} location fixes`, 'info');
+    }
+  }
+}
+
+export function toggleMapTrail() {
+  isPathVisible = !isPathVisible;
+  if (activeMapProvider === 'google_maps') {
+    Object.values(googlePolylines).forEach(p => p.setMap(isPathVisible ? googleMap : null));
+  } else if (leafletMap) {
+    Object.values(devicePolylines).forEach(p => {
+      if (isPathVisible) p.addTo(leafletMap);
+      else p.remove();
+    });
+  }
+  const btn = document.getElementById('btn-toggle-path');
+  if (btn) btn.textContent = isPathVisible ? 'Hide Path' : 'Show Path';
+  showToast(isPathVisible ? 'Movement path displayed.' : 'Movement path hidden.', 'info');
+}
+
+export function clearMapVisualTrail() {
+  if (activeMapProvider === 'google_maps') {
+    Object.values(googlePolylines).forEach(p => p.setPath([]));
+  } else {
+    Object.values(devicePolylines).forEach(p => p.setLatLngs([]));
+  }
+  showToast('Visual trail cleared for current view (evidence records preserved in database).', 'info');
+}
+
+export function renderMapDevicesList() {
+  const container = document.getElementById('map-devices-list');
+  const countBadge = document.getElementById('map-devices-count');
+  if (!container) return;
+
+  const devicesMap = {};
+  telemetryEvents.forEach(e => {
+    if (e.device_id && !devicesMap[e.device_id]) {
+      devicesMap[e.device_id] = e;
+    }
+  });
+
+  const devices = Object.values(devicesMap);
+  if (countBadge) countBadge.textContent = `${devices.length} Online`;
+
+  if (devices.length === 0) {
+    container.innerHTML = `
+      <div class="text-muted" style="padding: 16px; font-size: 11.5px; text-align: center;">
+        Awaiting authorized mobile location telemetry.
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = devices.map(d => {
+    const isSel = d.device_id === selectedDeviceId;
+    const speed = ((d.speed || 0) * 3.6).toFixed(1);
+    return `
+      <div class="map-device-item ${isSel ? 'active' : ''}" data-device-id="${escapeHtml(d.device_id)}" style="cursor: pointer; padding: 10px 12px; border-bottom: 1px solid var(--border-color);">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span class="mono font-bold text-cyan" style="font-size: 12px;">${escapeHtml(d.device_id)}</span>
+          <span class="badge badge-emerald" style="font-size: 9.5px;">ACTIVE</span>
+        </div>
+        <div style="font-size: 11px; color: var(--text-muted); margin-top: 3px;">
+          Case: ${escapeHtml(d.case_id || 'N/A')}
+        </div>
+        <div class="mono" style="font-size: 10.5px; color: var(--text-secondary); margin-top: 3px;">
+          ${Number(d.latitude || 0).toFixed(4)}, ${Number(d.longitude || 0).toFixed(4)}
+        </div>
+        <div style="font-size: 10px; color: var(--color-cyan); margin-top: 2px;">
+          Speed: ${speed} km/h • ±${(d.accuracy || 0).toFixed(1)}m
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  container.querySelectorAll('.map-device-item').forEach(el => {
+    el.addEventListener('click', () => {
+      const devId = el.getAttribute('data-device-id');
+      if (devId) selectDeviceOnMap(devId);
+    });
+  });
+}
+
+function setupMapControls() {
+  const btnLocate = document.getElementById('btn-locate-device');
+  if (btnLocate && !btnLocate._bound) {
+    btnLocate.addEventListener('click', locateSelectedDevice);
+    btnLocate._bound = true;
+  }
+
+  const btnFit = document.getElementById('btn-fit-bounds');
+  if (btnFit && !btnFit._bound) {
+    btnFit.addEventListener('click', fitMapTrail);
+    btnFit._bound = true;
+  }
+
+  const btnToggle = document.getElementById('btn-toggle-path');
+  if (btnToggle && !btnToggle._bound) {
+    btnToggle.addEventListener('click', toggleMapTrail);
+    btnToggle._bound = true;
+  }
+
+  const btnClear = document.getElementById('btn-clear-trail');
+  if (btnClear && !btnClear._bound) {
+    btnClear.addEventListener('click', clearMapVisualTrail);
+    btnClear._bound = true;
+  }
+
+  document.querySelectorAll('.map-time-btn').forEach(btn => {
+    if (!btn._bound) {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.map-time-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        filterLocationHistory(btn.getAttribute('data-range'));
+      });
+      btn._bound = true;
+    }
+  });
+}
+  showToast('Visual trail cleared for current view (evidence records preserved).', 'info');
 
 export function filterLocationHistory(range) {
   activeTimeRange = range;
@@ -745,10 +1036,6 @@ function updateWsIndicator(status) {
       container.classList.add('disconnected');
       textEl.innerHTML = '<span class="pulse-dot" style="background:#4B5752;"></span> DISCONNECTED';
       break;
-    case 'DEMO':
-      container.classList.add('reconnecting');
-      textEl.innerHTML = '<span class="pulse-dot amber"></span> DEMO STREAM (LOCAL)';
-      break;
   }
 }
 
@@ -759,6 +1046,14 @@ function determineWsUrl() {
   if (typeof window !== 'undefined' && window.__TRACEX_WS_URL__) {
     return window.__TRACEX_WS_URL__;
   }
+  // Derive WebSocket URL from API_BASE
+  if (typeof API_BASE === 'string' && API_BASE.startsWith('http')) {
+    try {
+      const u = new URL(API_BASE);
+      const wsProto = u.protocol === 'https:' ? 'wss:' : 'ws:';
+      return `${wsProto}//${u.host}/ws/investigation`;
+    } catch (e) {}
+  }
   const loc = window.location;
   const protocol = loc.protocol === 'https:' ? 'wss:' : 'ws:';
   return `${protocol}//${loc.host}/ws/investigation`;
@@ -768,51 +1063,11 @@ export function initWebSocket() {
   // Clear any existing connection/intervals
   clearInterval(heartbeatInterval);
   clearTimeout(reconnectTimer);
-  clearInterval(demoStreamInterval);
   reconnectAttempts = 0;
 
   if (ws) {
     try { ws.close(); } catch (e) {}
     ws = null;
-  }
-
-  // ---------------- DEMO MODE SIMULATION ----------------
-  if (isDemoMode()) {
-    updateWsIndicator('DEMO');
-
-    let mockStep = 0;
-    demoStreamInterval = setInterval(() => {
-      mockStep++;
-      const baseLat = 37.7749 + (Math.sin(mockStep * 0.2) * 0.003);
-      const baseLng = -122.4194 + (Math.cos(mockStep * 0.2) * 0.003);
-
-      const demoEvent = {
-        event_id: `TEL-DEMO-LIVE-${mockStep}`,
-        device_id: 'DEV-ANDROID-01',
-        case_id: getActiveCaseId() || 'CASE-2026-001',
-        event_type: 'LOCATION_UPDATE',
-        latitude: baseLat,
-        longitude: baseLng,
-        accuracy: 3.5,
-        speed: 4.2 + (Math.random() * 2),
-        altitude: 20.0,
-        battery: 84,
-        evidence_hash: `demo_hash_${Date.now()}`,
-        received_at: new Date().toISOString(),
-        is_demo: true
-      };
-
-      telemetryEvents.unshift(demoEvent);
-      if (telemetryEvents.length > 100) telemetryEvents.pop();
-
-      renderTelemetryFeed();
-      updateTelemetryMetrics();
-      renderOverviewRecentEvents();
-      updateOverviewDeviceSummary();
-      updateMapData();
-    }, 6000);
-
-    return;
   }
 
   // ---------------- LIVE SOC WEBSOCKET (REAL BACKEND) ----------------
@@ -826,6 +1081,7 @@ export function initWebSocket() {
       ws = new WebSocket(wsUrl);
 
       ws.onopen = () => {
+        const wasReconnecting = reconnectAttempts > 1;
         reconnectAttempts = 0;
         updateWsIndicator('CONNECTED');
         clearInterval(heartbeatInterval);
@@ -834,6 +1090,11 @@ export function initWebSocket() {
             ws.send('ping');
           }
         }, 25000);
+
+        // Section 26: After reconnection, synchronize state from REST API
+        if (wasReconnecting) {
+          loadTelemetryHistory();
+        }
       };
 
       ws.onmessage = (event) => {

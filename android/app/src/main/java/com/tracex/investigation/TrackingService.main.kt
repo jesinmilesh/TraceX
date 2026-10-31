@@ -1,6 +1,7 @@
 package com.tracex.investigation
 
 import android.app.Service
+import android.content.Context
 import android.content.Intent
 import android.os.IBinder
 import android.os.Handler
@@ -21,9 +22,16 @@ class TrackingService : Service() {
     }
 
     override fun onCreate() {
-        super.onCreate()
-
-        wsClient = CommandWebSocketClient("ws://10.0.2.2:8000/ws") { commandJson ->
+        val prefs = getSharedPreferences("tracex_device_prefs", Context.MODE_PRIVATE)
+        val baseServerUrl = prefs.getString("KEY_SERVER_URL", BuildConfig.DEFAULT_SERVER_URL) ?: BuildConfig.DEFAULT_SERVER_URL
+        val wsUrl = if (baseServerUrl.startsWith("https://")) {
+            baseServerUrl.replace("https://", "wss://") + "/ws"
+        } else if (baseServerUrl.startsWith("http://")) {
+            baseServerUrl.replace("http://", "ws://") + "/ws"
+        } else {
+            "wss://$baseServerUrl/ws"
+        }
+        wsClient = CommandWebSocketClient(wsUrl) { commandJson ->
             handleServerCommand(commandJson)
         }
         wsClient.connect()

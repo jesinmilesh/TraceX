@@ -88,7 +88,7 @@ class LiveTelemetryService : Service() {
 
     override fun onCreate() {
         super.onCreate()
-        deviceId = DeviceIdentity.getDeviceId(this)
+        deviceId = DeviceIdentity.getDeviceId(this) ?: ("DEV-" + DeviceIdentity.getInstallationId(this).takeLast(6))
         queueManager = OfflineQueueManager(this)
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
 

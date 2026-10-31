@@ -89,22 +89,28 @@ GitHub Repository: https://github.com/jesinmilesh/TraceX
 
 ---
 
-## Environment Variable Checklist
+## Environment Variables
 
-Configure environment variables appropriately across environments:
+Copy:
+```bash
+cp .env.example .env
+```
+Never commit `.env`.
+
+For production, configure secrets through the deployment provider's secure environment-variable settings (Vercel Project Settings for Frontend, Hosting Environment for Backend).
 
 | Variable | Environment | Component | Purpose |
 | :--- | :--- | :--- | :--- |
-| `VITE_API_BASE_URL` | Preview & Production | Frontend (Vercel) | Full HTTPS URL of deployed FastAPI backend |
-| `VITE_WS_URL` | Preview & Production | Frontend (Vercel) | Full WSS URL of persistent WebSocket server |
-| `ENVIRONMENT` | All Environments | Backend | `development`, `staging`, or `production` |
-| `PORT` | All Environments | Backend | Server binding port (default: `8000`) |
-| `HOST` | All Environments | Backend | Server binding host (default: `0.0.0.0`) |
-| `MONGODB_URI` | All Environments | Backend | MongoDB Atlas connection string |
-| `MONGODB_DATABASE` | All Environments | Backend | Database namespace (e.g. `monitor`) |
+| `TRACEX_ADMIN_USERNAME` | Production / Backend | Backend | Authorized administrator email/username |
+| `TRACEX_ADMIN_PASSWORD_HASH` | Production / Backend | Backend | Bcrypt password hash for admin (`TRACEX_ADMIN_PASSWORD` plaintext fallback) |
 | `JWT_SECRET` | All Environments | Backend | High-entropy JWT signing key (`openssl rand -hex 32`) |
-| `ALLOWED_ORIGINS` | Production | Backend | Strict comma-separated dashboard origins (e.g. `https://tracex.vercel.app`) |
-| `TRACEX_SERVER_URL` | Build / CI | Android APK | Production backend endpoint compiled into APK |
+| `MONGODB_URI` | All Environments | Backend | MongoDB Atlas connection string |
+| `MONGODB_DATABASE` | All Environments | Backend | Database namespace (e.g. `tracex_forensics`) |
+| `CORS_ORIGINS` / `ALLOWED_ORIGINS` | Production | Backend | Strict comma-separated dashboard origins (e.g. `https://tracex.vercel.app`) |
+| `API_BASE_URL` | Preview & Production | Frontend & Backend | Full HTTPS URL of deployed FastAPI backend |
+| `WS_BASE_URL` / `VITE_WS_URL` | Preview & Production | Frontend & Backend | Full WSS URL of persistent WebSocket server |
+| `MAP_API_KEY` | Production | Frontend | Optional public Google Maps API key restricted by domain |
+| `TRACEX_SERVER_URL` | Build / APK Settings | Android APK | Backend endpoint configured in APK settings |
 
 ---
 

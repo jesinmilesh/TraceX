@@ -44,7 +44,7 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        deviceId = DeviceIdentity.getDeviceId(this)
+        deviceId = DeviceIdentity.getDeviceId(this) ?: "Awaiting Enrollment"
         binding.tvDeviceId.text = deviceId
 
         loadSavedPreferences()
@@ -82,8 +82,17 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupListeners() {
-        // Update & Bind Case ID
+        // Update & Bind Case ID and Server URL
         binding.btnUpdateCase.setOnClickListener {
+            val serverInput = binding.etServerUrl.text.toString().trim()
+            if (serverInput.isNotEmpty()) {
+                serverUrl = ApiClient.normalizeUrl(serverInput)
+                getSharedPreferences("tracex_device_prefs", Context.MODE_PRIVATE)
+                    .edit()
+                    .putString("KEY_SERVER_URL", serverUrl)
+                    .apply()
+            }
+
             val caseId = binding.etCaseId.text.toString().trim()
             if (caseId.isEmpty()) {
                 Toast.makeText(this, "Please enter an authorized Case ID", Toast.LENGTH_SHORT).show()
@@ -94,14 +103,32 @@ class MainActivity : AppCompatActivity() {
 
             lifecycleScope.launch {
                 binding.btnUpdateCase.isEnabled = false
+                val currentDevId = DeviceIdentity.getDeviceId(this@MainActivity)
+                val installId = DeviceIdentity.getInstallationId(this@MainActivity)
                 val result = ApiClient.registerDevice(
                     baseUrl = serverUrl,
-                    deviceId = deviceId,
+                    deviceId = currentDevId,
+                    installationId = installId,
                     caseId = caseId,
                     deviceModel = DeviceIdentity.getDeviceModel(),
                     androidVersion = DeviceIdentity.getAndroidVersion()
                 )
                 binding.btnUpdateCase.isEnabled = true
+                if (result.success) {
+                    if (!result.assignedDeviceId.isNullOrEmpty()) {
+                        deviceId = result.assignedDeviceId
+                        DeviceIdentity.setDeviceId(this@MainActivity, deviceId)
+                        binding.tvDeviceId.text = if (!result.assignedDeviceNumber.isNullOrEmpty()) {
+                            "${result.assignedDeviceId} (#${result.assignedDeviceNumber})"
+                        } else {
+                            result.assignedDeviceId
+                        }
+                    }
+                    if (!result.assignedCaseId.isNullOrEmpty()) {
+                        binding.etCaseId.setText(result.assignedCaseId)
+                        saveCasePreference(result.assignedCaseId)
+                    }
+                }
                 Toast.makeText(this@MainActivity, result.message, Toast.LENGTH_LONG).show()
             }
         }
@@ -264,5 +291,6 @@ class MainActivity : AppCompatActivity() {
         if (!customServerUrl.isNullOrBlank()) {
             serverUrl = ApiClient.normalizeUrl(customServerUrl)
         }
+        binding.etServerUrl.setText(serverUrl)
     }
 }

@@ -6,9 +6,9 @@ This guide walks an investigator through an end-to-end evidence collection and v
 
 ## Step 1: Investigator Login
 1. Open the TraceX SOC Dashboard in your browser: `http://localhost:8000/`.
-2. Authenticate using authorized credentials:
-   - Email: `admin@tracex.local`
-   - Password: `TraceX@2026!`
+2. Authenticate using authorized credentials configured in environment:
+   - Email: `<YOUR_CONFIGURED_ADMIN_USERNAME>`
+   - Password: `<YOUR_CONFIGURED_ADMIN_PASSWORD>`
 3. The dashboard initializes and connects to the live WebSocket telemetry stream.
 
 ---
