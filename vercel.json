@@ -1,6 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "cleanUrls": true,
+  "outputDirectory": "dashboard",
   "functions": {
     "api/index.py": {
       "includeFiles": "backend/**"
@@ -16,20 +17,16 @@
       "destination": "/api/index.py"
     },
     {
-      "source": "/css/(.*)",
-      "destination": "/dashboard/css/$1"
-    },
-    {
-      "source": "/js/(.*)",
-      "destination": "/dashboard/js/$1"
-    },
-    {
       "source": "/dashboard/(.*)",
-      "destination": "/dashboard/$1"
+      "destination": "/$1"
+    },
+    {
+      "source": "/dashboard",
+      "destination": "/index.html"
     },
     {
       "source": "/(.*)",
-      "destination": "/dashboard/index.html"
+      "destination": "/index.html"
     }
   ],
   "headers": [
