@@ -857,6 +857,14 @@ export function clearMapVisualTrail() {
   showToast('Visual trail cleared for current view (evidence records preserved in database).', 'info');
 }
 
+export function scrubMapTimeline(ratio = 1.0) {
+  if (!telemetryEvents || !telemetryEvents.length) return;
+  const clampedRatio = Math.min(1, Math.max(0, Number(ratio) || 0));
+  const count = Math.max(1, Math.round(telemetryEvents.length * clampedRatio));
+  const sliced = telemetryEvents.slice(0, count);
+  updateMapData(sliced);
+}
+
 export function renderMapDevicesList() {
   const container = document.getElementById('map-devices-list');
   const countBadge = document.getElementById('map-devices-count');
