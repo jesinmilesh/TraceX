@@ -5,7 +5,7 @@
 
 import { initAuth, isAuthenticated } from './auth.js';
 import { initCases, loadCases } from './cases.js';
-import { initDevices, loadDevices } from './devices.js';
+import { initDevices, loadDevices, getDevicesList } from './devices.js';
 import {
   initWebSocket,
   loadTelemetryHistory,

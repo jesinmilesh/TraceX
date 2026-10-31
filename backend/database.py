@@ -39,7 +39,7 @@ def _build_direct_replica_set_uri(srv_uri: str) -> str:
                 "ac-hssewwn-shard-00-00.1hmtgyn.mongodb.net:27017,"
                 "ac-hssewwn-shard-00-01.1hmtgyn.mongodb.net:27017,"
                 "ac-hssewwn-shard-00-02.1hmtgyn.mongodb.net:27017/"
-                f"{db_name}?"
+                f"{db_part}?"
                 "ssl=true&replicaSet=atlas-6zoqof-shard-0&authSource=admin&retryWrites=true&w=majority"
             )
     except Exception:
@@ -158,4 +158,19 @@ async def init_db_indexes():
         logger.warning(f"Could not build indexes: {e}")
 
 def get_database():
+    global client, db
+    if db is None and settings.MONGODB_URI:
+        try:
+            conn_kwargs = {
+                "serverSelectionTimeoutMS": 10000,
+                "connectTimeoutMS": 10000,
+                "socketTimeoutMS": 15000,
+                "retryWrites": True
+            }
+            if "mongodb+srv://" in settings.MONGODB_URI or "ssl=true" in settings.MONGODB_URI.lower() or "tls=true" in settings.MONGODB_URI.lower():
+                conn_kwargs["tlsCAFile"] = certifi.where()
+            client = AsyncIOMotorClient(settings.MONGODB_URI, **conn_kwargs)
+            db = client[settings.MONGODB_DATABASE]
+        except Exception as e:
+            logger.warning(f"Lazy MongoDB initialization exception: {e}")
     return db

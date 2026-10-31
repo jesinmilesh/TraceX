@@ -102,7 +102,7 @@ export function initAuth(onLoginSuccess) {
         if (loginErrorAlert) {
           loginErrorAlert.style.display = 'block';
           if (errorText.includes('404') || errorText.includes('connect')) {
-            loginErrorAlert.innerHTML = `<strong>Server Connection Error:</strong> Unable to reach FastAPI backend at <code>${API_BASE}</code>.<br><small style="color:#94a3b8;">Click 'Configure' below to set the backend URL (e.g. <code>http://localhost:8000</code> or your production server).</small>`;
+            loginErrorAlert.innerHTML = `<strong>Server Connection Error:</strong> Unable to reach FastAPI backend at <code>${API_BASE}</code>.<br><small style="color:#94a3b8;">Click 'Configure' below to set the backend URL (e.g. your active server address).</small>`;
           } else {
             loginErrorAlert.textContent = errorText;
           }

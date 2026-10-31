@@ -37,13 +37,21 @@ export function determineApiBase() {
     }
   }
 
-  // 4. Same-origin deployment or development proxy
-  const loc = window.location;
+  // 4. Smart development and origin resolution
+  const loc = typeof window !== 'undefined' ? window.location : null;
   if (loc && loc.protocol && loc.protocol.startsWith('http')) {
-    if (loc.port === '5173') {
-      return '/api/v1';
+    // If viewing via local static file server (Live Server 5500, Vite 5173/3000), default API to FastAPI backend on 8000
+    if ((loc.hostname === 'localhost' || loc.hostname === '127.0.0.1') && loc.port && loc.port !== '8000') {
+      const devProto = loc.protocol || 'http:';
+      return `${devProto}//${loc.hostname}:8000/api/v1`;
     }
     return `${loc.origin}/api/v1`;
+  }
+
+  if (loc && loc.protocol === 'file:') {
+    const proto = 'http:';
+    const host = 'localhost';
+    return `${proto}//${host}:8000/api/v1`;
   }
 
   return '/api/v1';
@@ -112,10 +120,19 @@ export async function request(endpoint, options = {}) {
     const response = await fetch(url, config);
 
     if (response.status === 401) {
-      localStorage.removeItem('tracex_token');
-      localStorage.removeItem('tracex_user');
-      window.dispatchEvent(new CustomEvent('auth:expired'));
-      throw new Error('Session expired or unauthorized. Please authenticate.');
+      let errorMsg = 'Invalid email or password';
+      try {
+        const errJson = await response.json();
+        errorMsg = errJson.detail || errorMsg;
+      } catch (e) {}
+
+      if (!endpoint.includes('/auth/login')) {
+        localStorage.removeItem('tracex_token');
+        localStorage.removeItem('tracex_user');
+        window.dispatchEvent(new CustomEvent('auth:expired'));
+        errorMsg = 'Session expired or unauthorized. Please authenticate.';
+      }
+      throw new Error(errorMsg);
     }
 
     if (!response.ok) {

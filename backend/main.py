@@ -143,6 +143,7 @@ async def root():
     }
 
 @app.get("/health")
+@app.get("/api/v1/health")
 async def health():
     """Health check endpoint complying with production forensic monitoring standards."""
     db = get_database()
