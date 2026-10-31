@@ -1,7 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "cleanUrls": true,
-  "outputDirectory": "dashboard",
   "rewrites": [
     {
       "source": "/health",
@@ -12,8 +11,20 @@
       "destination": "/api/index.py"
     },
     {
+      "source": "/css/(.*)",
+      "destination": "/dashboard/css/$1"
+    },
+    {
+      "source": "/js/(.*)",
+      "destination": "/dashboard/js/$1"
+    },
+    {
+      "source": "/dashboard/(.*)",
+      "destination": "/dashboard/$1"
+    },
+    {
       "source": "/(.*)",
-      "destination": "/index.html"
+      "destination": "/dashboard/index.html"
     }
   ],
   "headers": [

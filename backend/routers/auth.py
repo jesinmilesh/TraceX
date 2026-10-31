@@ -54,7 +54,12 @@ async def login(credentials: UserLogin, request: Request):
     user_name = input_ident
 
     # Check against environment configured admin credentials
-    if admin_env_user and input_ident == admin_env_user:
+    is_admin_match = admin_env_user and (
+        input_ident == admin_env_user or 
+        input_ident == "admin" or 
+        (admin_env_user.startswith("admin@") and input_ident == admin_env_user.split("@")[0])
+    )
+    if is_admin_match:
         if admin_env_hash and verify_password(credentials.password, admin_env_hash):
             authenticated = True
         elif admin_env_plain and credentials.password == admin_env_plain:

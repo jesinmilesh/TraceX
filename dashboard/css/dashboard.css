@@ -1721,6 +1721,10 @@
   padding: 16px;
 }
 
+#auth-overlay.hidden {
+  display: none !important;
+}
+
 .auth-card {
   background: var(--bg-panel);
   border: 1px solid var(--border-color);

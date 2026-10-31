@@ -52,7 +52,10 @@ export function initAuth(onLoginSuccess) {
     const user = getStoredUser();
     const bottomNav = document.getElementById('mobile-bottom-nav');
     if (isAuthenticated() && user) {
-      if (authOverlay) authOverlay.style.display = 'none';
+      if (authOverlay) {
+        authOverlay.style.setProperty('display', 'none', 'important');
+        authOverlay.classList.add('hidden');
+      }
       if (bottomNav && window.innerWidth <= 768) bottomNav.style.display = 'flex';
       const userNameEl = document.getElementById('current-user-name');
       const userRoleEl = document.getElementById('current-user-role');
@@ -65,7 +68,10 @@ export function initAuth(onLoginSuccess) {
         userAvatarEl.textContent = initials || 'TX';
       }
     } else {
-      if (authOverlay) authOverlay.style.display = 'flex';
+      if (authOverlay) {
+        authOverlay.style.display = 'flex';
+        authOverlay.classList.remove('hidden');
+      }
       if (bottomNav) bottomNav.style.display = 'none';
       updateServerDisplay();
     }
@@ -75,7 +81,7 @@ export function initAuth(onLoginSuccess) {
   if (loginForm) {
     loginForm.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const email = document.getElementById('login-email').value.trim();
+      const rawIdent = document.getElementById('login-email').value.trim();
       const password = document.getElementById('login-password').value;
       const submitBtn = loginForm.querySelector('button[type="submit"]');
 
@@ -90,13 +96,22 @@ export function initAuth(onLoginSuccess) {
           submitBtn.textContent = 'Verifying Credentials...';
         }
 
-        const data = await api.post('/auth/login', { email, password });
+        const data = await api.post('/auth/login', { 
+          email: rawIdent, 
+          username: rawIdent, 
+          password 
+        });
         localStorage.setItem('tracex_token', data.access_token);
         localStorage.setItem('tracex_user', JSON.stringify(data.user));
 
         showToast(`Authenticated as ${data.user.role}: ${data.user.email}`, 'success');
         updateAuthUI();
-        if (onLoginSuccess) onLoginSuccess();
+        
+        try {
+          if (onLoginSuccess) onLoginSuccess();
+        } catch (initErr) {
+          console.error('[TraceX] Post-login initialization note:', initErr);
+        }
       } catch (err) {
         const errorText = err.message || 'Authentication failed';
         if (loginErrorAlert) {
